@@ -7,10 +7,21 @@ public final class Runner {
     private final String token;
 
     public static void main(String[] args) throws IOException {
-        if (args.length == 3) {
-            new Runner(args).run();
-        } else {
-            new Runner(new String[]{"127.0.0.1", "31001", "0000000000000000"}).run();
+        for (int i = 0; i < 15; ++i) {
+            try {
+                if (args.length == 3) {
+                    new Runner(args).run();
+                } else {
+                    new Runner(new String[]{"127.0.0.1", "31001", "0000000000000000"}).run();
+                }
+                break;
+            } catch (IOException e) {
+                System.out.println("Waiting for localrunner");
+                try {
+                    Thread.sleep(300);
+                } catch (InterruptedException ie) {
+                }
+            }
         }
     }
 
