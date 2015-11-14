@@ -1,7 +1,4 @@
-import model.Car;
-import model.Game;
-import model.Move;
-import model.World;
+import model.*;
 
 import static java.lang.StrictMath.*;
 
@@ -34,26 +31,72 @@ public final class MyStrategy implements Strategy {
         }
 
         double angleToWaypoint = self.getAngleTo(nextWaypointX, nextWaypointY);
-        double speedModule = hypot(self.getSpeedX(), self.getSpeedY());
 
-        move.setWheelTurn(angleToWaypoint * 32.0D / PI);
-        move.setEnginePower(1.0D); // 0.75D
-
-        //if (speedModule * speedModule * abs(angleToWaypoint) > 2.5D * 2.5D * PI) {
-        //    move.setBrake(true);
-        //}
-
-        if (self.getProjectileCount() > 0) {
-            move.setThrowProjectile(true);
+        for (Bonus bonus : world.getBonuses()) {
+            if (self.getDistanceTo(bonus) < game.getTrackTileSize() * 2D
+                    && abs(angleToWaypoint - self.getAngleTo(bonus)) < PI / 8.0D) {
+                nextWaypointX = bonus.getX();
+                nextWaypointY = bonus.getY();
+                break;
+            }
         }
 
-        if (self.getOilCanisterCount() > 0) {
-            move.setSpillOil(true);
+        double speedModule = hypot(self.getSpeedX(), self.getSpeedY());
+
+        boolean isReverse = self.getEnginePower() < 0;
+
+        if (isReverse) {
+            move.setWheelTurn(-32.0D / PI * angleToWaypoint);
+        } else {
+            move.setWheelTurn(32.0D / PI * angleToWaypoint);
+        }
+
+        if (abs(angleToWaypoint) > PI / 6 && (speedModule < 3D || isReverse)) {
+            move.setEnginePower(-1.0D);
+        } else {
+            move.setEnginePower(1.0D);
+
+            if (abs(angleToWaypoint) > PI / 4.0D && speedModule > 2D) {
+                move.setBrake(true);
+            }
+        }
+
+        if (abs(self.getSpeedX()) > 0.1D && abs(self.getSpeedY()) > 0.1D) {
+            if (self.getProjectileCount() > 0) {
+                for (Car enemy : world.getCars()) {
+                    if (enemy.isTeammate()) {
+                        continue;
+                    }
+                    if (self.getDistanceTo(enemy) < game.getTrackTileSize() * 3) {
+                        if (abs(self.getAngleTo(enemy)) < game.getSideWasherAngle()) {
+                            move.setThrowProjectile(true);
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if (self.getOilCanisterCount() > 0) {
+                for (Car enemy : world.getCars()) {
+                    if (enemy.isTeammate()) {
+                        continue;
+                    }
+                    if (self.getDistanceTo(enemy) < game.getTrackTileSize() * 3 &&
+                            self.getDistanceTo(enemy) > game.getCarHeight() * 1.5D) {
+                        if (self.getAngleTo(enemy) < -PI / 6.0D || self.getAngleTo(enemy) > PI - PI / 6.0D) {
+                            move.setSpillOil(true);
+                            break;
+                        }
+                    }
+                }
+            }
         }
 
         if (self.getNitroChargeCount() > 0) {
             if (abs(angleToWaypoint) < PI / 10.0D) {
-                move.setUseNitro(true);
+                if (world.getTick() > game.getInitialFreezeDurationTicks()) {
+                    move.setUseNitro(true);
+                }
             }
         }
     }
