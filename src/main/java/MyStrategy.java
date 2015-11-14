@@ -37,10 +37,22 @@ public final class MyStrategy implements Strategy {
         double speedModule = hypot(self.getSpeedX(), self.getSpeedY());
 
         move.setWheelTurn(angleToWaypoint * 32.0D / PI);
-        move.setEnginePower(0.75D);
+        move.setEnginePower(1D); // 0.75D
 
-        if (speedModule * speedModule * abs(angleToWaypoint) > 2.5D * 2.5D * PI) {
-            move.setBrake(true);
+        //if (speedModule * speedModule * abs(angleToWaypoint) > 2.5D * 2.5D * PI) {
+        //    move.setBrake(true);
+        //}
+
+        if (self.getProjectileCount() > 0) {
+            move.setThrowProjectile(true);
+        }
+
+        if (self.getOilCanisterCount() > 0) {
+            move.setSpillOil(true);
+        }
+
+        if (self.getNitroChargeCount() > 0) {
+            move.setUseNitro(true);
         }
     }
 }
