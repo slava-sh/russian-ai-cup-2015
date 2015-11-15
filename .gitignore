@@ -1,5 +1,4 @@
 .idea/workspace.xml
 target
 coderacing2015-docs.pdf
-local-runner
-!local-runner/plugins/LocalTestRendererListener.java
+*.class
