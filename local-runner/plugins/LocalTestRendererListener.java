@@ -4,6 +4,7 @@ import java.lang.String;
 import static java.lang.StrictMath.*;
 
 import model.*;
+import model.TileType;
 
 public final class LocalTestRendererListener {
     private Graphics graphics;
@@ -27,6 +28,17 @@ public final class LocalTestRendererListener {
     enum SubtileType { WALL, ROAD };
 
     private static final int SUBTILE_COUNT = 5;
+    private static final int SUBTILE_LEFT;
+    private static final int SUBTILE_RIGHT;
+    private static final int SUBTILE_TOP;
+    private static final int SUBTILE_BOTTOM;
+    static {
+        SUBTILE_LEFT = 0;
+        SUBTILE_RIGHT = SUBTILE_COUNT - 1;
+        SUBTILE_TOP = 0;
+        SUBTILE_BOTTOM = SUBTILE_COUNT - 1;
+    }
+
     private SubtileType[][] subtilesXY;
 
     public void beforeDrawScene(Graphics graphics, World world, Game game, int canvasWidth, int canvasHeight,
@@ -124,8 +136,8 @@ public final class LocalTestRendererListener {
 
         for (Car car : world.getCars()) {
             if (car.getPlayerId() == myId) {
-                for (int dx = -SUBTILE_COUNT; dx <= SUBTILE_COUNT; ++dx) {
-                    for (int dy = -SUBTILE_COUNT; dy <= SUBTILE_COUNT; ++dy) {
+                for (int dx = -SUBTILE_COUNT * 10; dx <= SUBTILE_COUNT * 10; ++dx) {
+                    for (int dy = -SUBTILE_COUNT * 10; dy <= SUBTILE_COUNT * 10; ++dy) {
                         int x = toSubtileCoordinate(car.getX()) + dx;
                         int y = toSubtileCoordinate(car.getY()) + dy;
                         if (0 <= x && x < subtilesXY.length && 0 <= y && y < subtilesXY[x].length) {
@@ -190,12 +202,41 @@ public final class LocalTestRendererListener {
                     for (int j = 0; j < SUBTILE_COUNT; ++j) {
                         int subtile_x = tile_x * SUBTILE_COUNT + i;
                         int subtile_y = tile_y * SUBTILE_COUNT + j;
-                        if (world.getTilesXY()[tile_x][tile_y] == TileType.EMPTY) {
-                            subtilesXY[subtile_x][subtile_y] = SubtileType.WALL;
+                        SubtileType subtileType = SubtileType.ROAD;
+                        switch (world.getTilesXY()[tile_x][tile_y]) {
+                            case LEFT_TOP_CORNER:
+                                if (i == SUBTILE_LEFT || j == SUBTILE_TOP || (i == SUBTILE_RIGHT && j == SUBTILE_BOTTOM)) {
+                                    subtileType = SubtileType.WALL;
+                                }
+                                break;
+                            case RIGHT_TOP_CORNER:
+                                if (i == SUBTILE_RIGHT || j == SUBTILE_TOP || (i == SUBTILE_LEFT && j == SUBTILE_BOTTOM)) {
+                                    subtileType = SubtileType.WALL;
+                                }
+                                break;
+                            case LEFT_BOTTOM_CORNER:
+                                if (i == SUBTILE_LEFT || j == SUBTILE_BOTTOM || (i == SUBTILE_RIGHT && j == SUBTILE_TOP)) {
+                                    subtileType = SubtileType.WALL;
+                                }
+                                break;
+                            case RIGHT_BOTTOM_CORNER:
+                                if (i == SUBTILE_RIGHT || j == SUBTILE_BOTTOM || (i == SUBTILE_LEFT && j == SUBTILE_TOP)) {
+                                    subtileType = SubtileType.WALL;
+                                }
+                                break;
+                            case VERTICAL:
+                                if (i == SUBTILE_LEFT || i == SUBTILE_RIGHT) {
+                                    subtileType = SubtileType.WALL;
+                                }
+                                break;
+                            case HORIZONTAL:
+                                if (j == SUBTILE_TOP || j == SUBTILE_BOTTOM) {
+                                    subtileType = SubtileType.WALL;
+                                }
+                                break;
+                            default:
                         }
-                        else {
-                            subtilesXY[subtile_x][subtile_y] = SubtileType.ROAD;
-                        }
+                        subtilesXY[subtile_x][subtile_y] = subtileType;
                     }
                 }
             }
