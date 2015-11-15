@@ -107,11 +107,11 @@ public final class LocalTestRendererListener {
 
         for (Car car : world.getCars()) {
             if (car.getPlayerId() == myId) {
-                graphics.setColor(new Color(255, 255, 255));
                 double speedModule = hypot(car.getSpeedX(), car.getSpeedY());
-                fillRect(car.getX() - 50.0D, car.getY() - 50.0D, 200.0D, 100.0D);
+                //graphics.setColor(Color.WHITE);
+                //fillRect(car.getX() - 50.0D, car.getY() - 50.0D, 200.0D, 100.0D);
                 graphics.setColor(Color.BLACK);
-                drawString(String.format("%2.0f", speedModule)+ "", FONT_SIZE_SMALL, car.getX() - 40.0D, car.getY() + 50.0D);
+                drawString(String.format("%2.0f", speedModule) + "", FONT_SIZE_SMALL, car.getX(), car.getY());
             }
         }
 
