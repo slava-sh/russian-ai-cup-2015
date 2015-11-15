@@ -139,32 +139,25 @@ public final class LocalTestRendererListener {
         setColor(Color.BLACK);
         drawString("" + subtileSum, FONT_SIZE_BIG, game.getTrackTileSize(), game.getTrackTileSize());
 
-        for (Car car : world.getCars()) {
-            if (car.getPlayerId() == myId) {
-                int subtile_x = toSubtileCoordinate(car.getX());
-                int subtile_y = toSubtileCoordinate(car.getY());
-                for (int dx = -SUBTILE_COUNT * 10; dx <= SUBTILE_COUNT * 10; ++dx) {
-                    for (int dy = -SUBTILE_COUNT * 10; dy <= SUBTILE_COUNT * 10; ++dy) {
-                        int x = subtile_x + dx;
-                        int y = subtile_x + dy;
-                        if (0 <= x && x < subtilesXY.length && 0 <= y && y < subtilesXY[x].length) {
-                            if (subtilesXY[x][y] == SubtileType.ROAD) {
-                                setColor(Color.YELLOW);
-                            } else {
-                                setColor(Color.PINK);
-                                fillRect(x * getSubtileSize(), y * getSubtileSize(), getSubtileSize(), getSubtileSize());
-                            }
-                        }
+        for (int x = 0; x < subtilesXY.length; ++x) {
+            for (int y = 0; y < subtilesXY[x].length; ++y) {
+                if (0 <= x && x < subtilesXY.length
+                        && 0 <= y && y < subtilesXY[x].length) {
+                    if (subtilesXY[x][y] == SubtileType.WALL) {
+                        setColor(Color.PINK);
+                        fillRect(x * getSubtileSize(), y * getSubtileSize(), getSubtileSize(), getSubtileSize());
                     }
                 }
+            }
+        }
 
+        for (Car car : world.getCars()) {
+            if (car.getPlayerId() == myId) {
+                Point2I carSubtile = new Point2I(toSubtileCoordinate(car.getX()), toSubtileCoordinate(car.getY()));
                 Point2I target = new Point2I(nextWP.x * SUBTILE_COUNT + SUBTILE_COUNT / 2,
                         nextWP.y * SUBTILE_COUNT + SUBTILE_COUNT / 2);
-                drawString("qqqq", FONT_SIZE_SMALL, car.getX(), car.getY() + 150);
-                List<Point2I> path = bfs(new Point2I(subtile_x, subtile_y), target);
+                List<Point2I> path = bfs(carSubtile, target);
                 setColor(Color.BLACK);
-                drawString("" + path.size(), FONT_SIZE_SMALL, car.getX(), car.getY() + 100);
-                drawString("eeee", FONT_SIZE_SMALL, car.getX(), car.getY() + 150);
                 for (Point2I subtile : path) {
                     setColor(Color.RED);
                     fillRect(subtile.x * getSubtileSize(), subtile.y * getSubtileSize(), getSubtileSize(), getSubtileSize());
