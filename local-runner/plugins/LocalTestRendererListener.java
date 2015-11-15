@@ -1,10 +1,19 @@
-import java.awt.*;
-import java.lang.String;
+import model.*;
+
+import java.awt.Graphics;
+import java.awt.Color;
+import java.awt.Font;
+
+import java.lang.Override;
+import java.util.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.Map;
+
+import java.io.*;
 
 import static java.lang.StrictMath.*;
-
-import model.*;
-import model.TileType;
 
 public final class LocalTestRendererListener {
     private Graphics graphics;
@@ -25,13 +34,16 @@ public final class LocalTestRendererListener {
     private static int currentWPId = -1;
     private static long myId = -1;
 
-    enum SubtileType { WALL, ROAD };
+    enum SubtileType {WALL, ROAD}
+
+    ;
 
     private static final int SUBTILE_COUNT = 5;
     private static final int SUBTILE_LEFT;
     private static final int SUBTILE_RIGHT;
     private static final int SUBTILE_TOP;
     private static final int SUBTILE_BOTTOM;
+
     static {
         SUBTILE_LEFT = 0;
         SUBTILE_RIGHT = SUBTILE_COUNT - 1;
@@ -136,45 +148,38 @@ public final class LocalTestRendererListener {
 
         for (Car car : world.getCars()) {
             if (car.getPlayerId() == myId) {
+                int subtile_x = toSubtileCoordinate(car.getX());
+                int subtile_y = toSubtileCoordinate(car.getY());
                 for (int dx = -SUBTILE_COUNT * 10; dx <= SUBTILE_COUNT * 10; ++dx) {
                     for (int dy = -SUBTILE_COUNT * 10; dy <= SUBTILE_COUNT * 10; ++dy) {
-                        int x = toSubtileCoordinate(car.getX()) + dx;
-                        int y = toSubtileCoordinate(car.getY()) + dy;
+                        int x = subtile_x + dx;
+                        int y = subtile_x + dy;
                         if (0 <= x && x < subtilesXY.length && 0 <= y && y < subtilesXY[x].length) {
                             if (subtilesXY[x][y] == SubtileType.ROAD) {
                                 setColor(Color.YELLOW);
-                            }
-                            else {
+                            } else {
                                 setColor(Color.PINK);
                                 fillRect(x * getSubtileSize(), y * getSubtileSize(), getSubtileSize(), getSubtileSize());
                             }
                         }
                     }
                 }
+
+                Point2I target = new Point2I(nextWP.x * SUBTILE_COUNT + SUBTILE_COUNT / 2,
+                        nextWP.y * SUBTILE_COUNT + SUBTILE_COUNT / 2);
+                drawString("qqqq", FONT_SIZE_SMALL, car.getX(), car.getY() + 150);
+                List<Point2I> path = bfs(new Point2I(subtile_x, subtile_y), target);
+                setColor(Color.BLACK);
+                drawString("" + path.size(), FONT_SIZE_SMALL, car.getX(), car.getY() + 100);
+                drawString("eeee", FONT_SIZE_SMALL, car.getX(), car.getY() + 150);
+                for (Point2I subtile : path) {
+                    setColor(Color.RED);
+                    fillRect(subtile.x * getSubtileSize(), subtile.y * getSubtileSize(), getSubtileSize(), getSubtileSize());
+                }
             }
         }
 
         setColor(Color.BLACK);
-    }
-
-    private void drawSubtileGrid() {
-        setColor(new Color(240, 240, 240));
-        for (int i = 0; i < world.getWidth(); ++i) {
-            for (int j = 0; j < world.getWidth(); ++j) {
-                if (world.getTilesXY()[i][j] != TileType.EMPTY) {
-                    double minX = i * game.getTrackTileSize();
-                    double maxX = (i + 1) * game.getTrackTileSize();
-                    double minY = j * game.getTrackTileSize();
-                    double maxY = (j + 1) * game.getTrackTileSize();
-                    for (double x = minX; x < maxX; x += getSubtileSize()) {
-                        drawLine(x, minY, x, maxY);
-                    }
-                    for (double y = minY; y < maxY; y += getSubtileSize()) {
-                        drawLine(minX, y, maxX, y);
-                    }
-                }
-            }
-        }
     }
 
     public void afterDrawScene(Graphics graphics, World world, Game game, int canvasWidth, int canvasHeight,
@@ -197,10 +202,10 @@ public final class LocalTestRendererListener {
     private void createSubtiles() {
         subtilesXY = new SubtileType[world.getWidth() * SUBTILE_COUNT][world.getHeight() * SUBTILE_COUNT];
         for (int tile_x = 0; tile_x < world.getWidth(); ++tile_x) {
-            for (int tile_y = 0; tile_y < world.getWidth(); ++tile_y) {
-                for (int i = 0; i < SUBTILE_COUNT; ++i) {
+            for (int i = 0; i < SUBTILE_COUNT; ++i) {
+                int subtile_x = tile_x * SUBTILE_COUNT + i;
+                for (int tile_y = 0; tile_y < world.getWidth(); ++tile_y) {
                     for (int j = 0; j < SUBTILE_COUNT; ++j) {
-                        int subtile_x = tile_x * SUBTILE_COUNT + i;
                         int subtile_y = tile_y * SUBTILE_COUNT + j;
                         SubtileType subtileType = SubtileType.ROAD;
                         switch (world.getTilesXY()[tile_x][tile_y]) {
@@ -243,6 +248,26 @@ public final class LocalTestRendererListener {
         }
     }
 
+    private void drawSubtileGrid() {
+        setColor(new Color(240, 240, 240));
+        for (int i = 0; i < world.getWidth(); ++i) {
+            for (int j = 0; j < world.getWidth(); ++j) {
+                if (world.getTilesXY()[i][j] != TileType.EMPTY) {
+                    double minX = i * game.getTrackTileSize();
+                    double maxX = (i + 1) * game.getTrackTileSize();
+                    double minY = j * game.getTrackTileSize();
+                    double maxY = (j + 1) * game.getTrackTileSize();
+                    for (double x = minX; x < maxX; x += getSubtileSize()) {
+                        drawLine(x, minY, x, maxY);
+                    }
+                    for (double y = minY; y < maxY; y += getSubtileSize()) {
+                        drawLine(minX, y, maxX, y);
+                    }
+                }
+            }
+        }
+    }
+
     private int toSubtileCoordinate(double coordinate) {
         return (int) (coordinate / getSubtileSize());
     }
@@ -264,6 +289,48 @@ public final class LocalTestRendererListener {
         this.top = top;
         this.width = width;
         this.height = height;
+    }
+
+    private static final Point2I[] DXY = {
+            new Point2I(0, -1),
+            new Point2I(1, -1),
+            new Point2I(1, 0),
+            new Point2I(1, 1),
+            new Point2I(0, 1),
+            new Point2I(-1, 1),
+            new Point2I(-1, 0),
+            new Point2I(-1, -1),
+    };
+
+    private List<Point2I> bfs(Point2I start, Point2I end) {
+        Queue<Point2I> queue = new LinkedList<Point2I>();
+        Map<Point2I, Point2I> prev = new HashMap<Point2I, Point2I>();
+        queue.add(start);
+        while (!queue.isEmpty()) {
+            Point2I vertex = queue.remove();
+            if (vertex.equals(end)) {
+                break;
+            }
+            for (Point2I dxy : DXY) {
+                Point2I nextVertex = new Point2I(vertex.x + dxy.x, vertex.y + dxy.y);
+                if (0 <= nextVertex.x && nextVertex.x < subtilesXY.length
+                        && 0 <= nextVertex.y && nextVertex.y < subtilesXY[nextVertex.x].length
+                        && subtilesXY[nextVertex.x][nextVertex.y] != SubtileType.WALL
+                        && !prev.containsKey(nextVertex)) {
+                    prev.put(nextVertex, vertex);
+                    queue.add(nextVertex);
+                }
+            }
+        }
+
+        List<Point2I> path = new LinkedList<Point2I>();
+        Point2I vertex = end;
+        do {
+            path.add(vertex);
+            vertex = prev.get(vertex);
+        } while (!vertex.equals(start));
+        Collections.reverse(path);
+        return path;
     }
 
     private void setColor(Color c) {
@@ -387,6 +454,26 @@ public final class LocalTestRendererListener {
                 return intValue;
             }
             throw new IllegalArgumentException("Can't convert double " + value + " to int.");
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            Point2I point2I = (Point2I) o;
+
+            if (x != point2I.x) return false;
+            if (y != point2I.y) return false;
+
+            return true;
+        }
+
+        @Override
+        public int hashCode() {
+            int result = x;
+            result = 31 * result + y;
+            return result;
         }
     }
 
