@@ -4,14 +4,7 @@ import java.awt.Graphics;
 import java.awt.Color;
 import java.awt.Font;
 
-import java.lang.Override;
 import java.util.*;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.Map;
-
-import java.io.*;
 
 import static java.lang.StrictMath.*;
 
@@ -238,6 +231,34 @@ public final class LocalTestRendererListener {
                                 if (j == SUBTILE_TOP || j == SUBTILE_BOTTOM) {
                                     subtileType = SubtileType.WALL;
                                 }
+                                break;
+                            case CROSSROADS:
+                                if ((i == SUBTILE_LEFT || i == SUBTILE_RIGHT) && (j == SUBTILE_TOP || j == SUBTILE_BOTTOM)) {
+                                    subtileType = SubtileType.WALL;
+                                }
+                                break;
+                            case LEFT_HEADED_T:
+                                if (i == SUBTILE_RIGHT || (i == SUBTILE_LEFT && (j == SUBTILE_TOP || j == SUBTILE_BOTTOM))) {
+                                    subtileType = SubtileType.WALL;
+                                }
+                                break;
+                            case RIGHT_HEADED_T:
+                                if (i == SUBTILE_LEFT || (i == SUBTILE_RIGHT && (j == SUBTILE_TOP || j == SUBTILE_BOTTOM))) {
+                                    subtileType = SubtileType.WALL;
+                                }
+                                break;
+                            case TOP_HEADED_T:
+                                if (j == SUBTILE_BOTTOM || (j == SUBTILE_TOP && (i == SUBTILE_LEFT || i == SUBTILE_RIGHT))) {
+                                    subtileType = SubtileType.WALL;
+                                }
+                                break;
+                            case BOTTOM_HEADED_T:
+                                if (j == SUBTILE_TOP || (j == SUBTILE_BOTTOM && (i == SUBTILE_LEFT || i == SUBTILE_RIGHT))) {
+                                    subtileType = SubtileType.WALL;
+                                }
+                                break;
+                            case EMPTY:
+                                subtileType = SubtileType.WALL;
                                 break;
                             default:
                         }
