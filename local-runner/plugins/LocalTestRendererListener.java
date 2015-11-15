@@ -1,8 +1,11 @@
 import java.awt.*;
+import java.awt.Color;
 import java.lang.String;
+
 import static java.lang.StrictMath.*;
 
 import model.*;
+import model.TileType;
 
 public final class LocalTestRendererListener {
     private Graphics graphics;
@@ -23,9 +26,18 @@ public final class LocalTestRendererListener {
     private static int currentWPId = -1;
     private static long myId = -1;
 
+    enum SubtileType { WALL, ROAD };
+
+    private static final int SUBTILE_COUNT = 5;
+    private SubtileType[][] subtilesXY;
+
     public void beforeDrawScene(Graphics graphics, World world, Game game, int canvasWidth, int canvasHeight,
                                 double left, double top, double width, double height) {
         updateFields(graphics, world, game, canvasWidth, canvasHeight, left, top, width, height);
+
+        if (subtilesXY == null) {
+            createSubtiles();
+        }
 
         double trackTileSize = game.getTrackTileSize();
         Point2I nextWP = new Point2I();
@@ -44,7 +56,7 @@ public final class LocalTestRendererListener {
             double x = waypoint[0] * trackTileSize + 100.0D;
             double y = waypoint[1] * trackTileSize + 100.0D;
 
-            graphics.setColor(new Color(252, 255, 127));
+            setColor(new Color(252, 255, 127));
             fillRect(x, y, trackTileSize - 200.0D, trackTileSize - 200.0D);
         }
 
@@ -55,7 +67,7 @@ public final class LocalTestRendererListener {
                 double x = nextWP.getX() * trackTileSize + 100.0D;
                 double y = nextWP.getY() * trackTileSize + 100.0D;
 
-                graphics.setColor(new Color(75, 255, 63));
+                setColor(new Color(75, 255, 63));
                 fillRect(x, y, trackTileSize - 200.0D, trackTileSize - 200.0D);
             }
         }
@@ -73,7 +85,7 @@ public final class LocalTestRendererListener {
         }
 
         nextWPId = 1;
-        graphics.setColor(Color.BLACK);
+        setColor(Color.BLACK);
         for (int[] waypoint : world.getWaypoints()) {
             double x = waypoint[0] * trackTileSize + 320.0D;
             double y = waypoint[1] * trackTileSize + 490.0D;
@@ -98,7 +110,54 @@ public final class LocalTestRendererListener {
             nextWPId = nextWPId + 1;
         }
 
-        graphics.setColor(Color.BLACK);
+        double subtileSize = game.getTrackTileSize() / SUBTILE_COUNT;
+        int subtileSum = 0;
+        setColor(new Color(240, 240, 240));
+        for (int i = 0; i < world.getWidth(); ++i) {
+            for (int j = 0; j < world.getWidth(); ++j) {
+                if (world.getTilesXY()[i][j] != TileType.EMPTY) {
+                    subtileSum += SUBTILE_COUNT * SUBTILE_COUNT;
+                }
+            }
+        }
+        setColor(Color.BLACK);
+        drawString("" + subtileSum, FONT_SIZE_BIG, game.getTrackTileSize(), game.getTrackTileSize());
+
+        //setColor(Color.RED);
+        //for (Car car : world.getCars()) {
+        //    if (car.isTeammate()) {
+        //        for (int dx = -SUBTILE_COUNT; dx <= SUBTILE_COUNT; ++dx) {
+        //            for (int dy = -SUBTILE_COUNT; dy <= SUBTILE_COUNT; ++dy) {
+        //                int x = toSubtileCoordinate(car.getX()) + dx;
+        //                int y = toSubtileCoordinate(car.getY()) + dy;
+        //                if (0 <= x && x < subtilesXY.length && 0 <= y && y < subtilesXY[x].length) {
+        //                    fillRect(x * getSubtileSize(), y * getSubtileSize(), getSubtileSize(), getSubtileSize());
+        //                }
+        //            }
+        //        }
+        //    }
+        //}
+
+        setColor(new Color(240, 240, 240));
+        for (int i = 0; i < world.getWidth(); ++i) {
+            for (int j = 0; j < world.getWidth(); ++j) {
+                if (world.getTilesXY()[i][j] != TileType.EMPTY) {
+                    double minX = i * game.getTrackTileSize();
+                    double maxX = (i + 1) * game.getTrackTileSize();
+                    double minY = j * game.getTrackTileSize();
+                    double maxY = (j + 1) * game.getTrackTileSize();
+                    for (double x = minX; x < maxX; x += subtileSize) {
+                        drawLine(x, minY, x, maxY);
+                    }
+                    for (double y = minY; y < maxY; y += subtileSize) {
+                        drawLine(minX, y, maxX, y);
+                    }
+                }
+            }
+        }
+
+        setColor(Color.BLACK);
+        setColor(Color.RED);
     }
 
     public void afterDrawScene(Graphics graphics, World world, Game game, int canvasWidth, int canvasHeight,
@@ -108,14 +167,41 @@ public final class LocalTestRendererListener {
         for (Car car : world.getCars()) {
             if (car.getPlayerId() == myId) {
                 double speedModule = hypot(car.getSpeedX(), car.getSpeedY());
-                //graphics.setColor(Color.WHITE);
+                //setColor(Color.WHITE);
                 //fillRect(car.getX() - 50.0D, car.getY() - 50.0D, 200.0D, 100.0D);
-                graphics.setColor(Color.BLACK);
+                setColor(Color.BLACK);
                 drawString(String.format("%2.0f", speedModule) + "", FONT_SIZE_SMALL, car.getX(), car.getY());
             }
         }
 
-        graphics.setColor(Color.BLACK);
+        setColor(Color.BLACK);
+    }
+
+    private void createSubtiles() {
+        for (int tile_x = 0; tile_x < world.getWidth(); ++tile_x) {
+            for (int tile_y = 0; tile_y < world.getWidth(); ++tile_y) {
+                for (int i = 0; i < SUBTILE_COUNT; ++i) {
+                    for (int j = 0; j < SUBTILE_COUNT; ++j) {
+                        int subtile_x = tile_x * SUBTILE_COUNT + i;
+                        int subtile_y = tile_y * SUBTILE_COUNT + j;
+                        if (world.getTilesXY()[tile_x][tile_y] == TileType.EMPTY) {
+                            subtilesXY[subtile_x][subtile_y] = SubtileType.WALL;
+                        }
+                        else {
+                            subtilesXY[subtile_x][subtile_y] = SubtileType.ROAD;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private int toSubtileCoordinate(double coordinate) {
+        return (int) (coordinate / getSubtileSize());
+    }
+
+    private double getSubtileSize() {
+        return game.getTrackTileSize() / SUBTILE_COUNT;
     }
 
     private void updateFields(Graphics graphics, World world, Game game, int canvasWidth, int canvasHeight,
@@ -131,6 +217,10 @@ public final class LocalTestRendererListener {
         this.top = top;
         this.width = width;
         this.height = height;
+    }
+
+    private void setColor(Color c) {
+        graphics.setColor(c);
     }
 
     private void drawString(String text, int fontSize, double x1, double y1) {

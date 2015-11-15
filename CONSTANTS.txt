@@ -1,0 +1,4 @@
+game.getCarWidth() = 210
+game.getCarHeight() = 140
+game.getTrackTileSize() = 800
+game.getTrackTileMargin() = 80

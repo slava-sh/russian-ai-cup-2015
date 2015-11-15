@@ -7,7 +7,7 @@ public final class Runner {
     private final String token;
 
     public static void main(String[] args) throws IOException {
-        for (int i = 0; i < 15; ++i) {
+        for (int i = 0; i < 30; ++i) {
             try {
                 if (args.length == 3) {
                     new Runner(args).run();
