@@ -16,7 +16,7 @@ public final class Runner {
                 }
                 break;
             } catch (IOException e) {
-                System.out.println("Waiting for localrunner");
+                System.out.println("Waiting for local-runner");
                 try {
                     Thread.sleep(300);
                 } catch (InterruptedException ie) {
