@@ -241,7 +241,6 @@ public final class MyStrategy implements Strategy {
                                 subtileType = SubtileType.WALL;
                                 break;
                             case UNKNOWN:
-                                subtileType = SubtileType.WALL;
                                 needRebuildSubtiles = true;
                                 break;
                             default:
