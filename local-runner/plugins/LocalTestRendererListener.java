@@ -90,7 +90,7 @@ public final class LocalTestRendererListener {
 
         // fillWallSubtiles();
 
-        // renderBfs();
+        renderBfs();
 
         setColor(Color.BLACK);
     }
@@ -191,7 +191,7 @@ public final class LocalTestRendererListener {
         Point2I subtile = new Point2I(toSubtileCoordinate(self.getX()), toSubtileCoordinate(self.getY()));
         int subtileI = 0;
         while (!subtile.equals(nextWPSubtile)) {
-            if (subtileI == 1) {
+            if (subtileI == 2) {
                 setColor(Color.GREEN);
             }
             else {

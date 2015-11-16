@@ -8,21 +8,29 @@ public final class MyStrategy implements Strategy {
     public void move(Car self, World world, Game game, Move move) {
         updateFields(self, world, game);
 
-        move.setWheelTurn(0.3D);
         if (world.getTick() < 220) {
             return;
         }
 
         Point2I nextSubtile = getNextSubtile(toSubtilePoint(self));
+        nextSubtile = getNextSubtile(nextSubtile);
+        nextSubtile = getNextSubtile(nextSubtile);
         double nextX = (nextSubtile.x + 0.5D) * getSubtileSize();
         double nextY = (nextSubtile.y + 0.5D) * getSubtileSize();
+        double angle = self.getAngleTo(nextX, nextY);
 
-        double angleToWaypoint = self.getAngleTo(nextX, nextY);
+        boolean isReverse = self.getEnginePower() < 0;
 
-        double speedModule = hypot(self.getSpeedX(), self.getSpeedY());
-        // drawLine(self.getX(), self.getY(), self.getX() + self.getSpeedX() * TIME, self.getY() + self.getSpeedY() * TIME);
+        if (isReverse) {
+            move.setWheelTurn(-32.0D / PI * angle);
+        } else {
+            move.setWheelTurn(32.0D / PI * angle);
+        }
 
         move.setEnginePower(1);
+        if (abs(angle) > PI / 4) {
+            move.setBrake(true);
+        }
     }
 
     private Car self;
@@ -46,8 +54,16 @@ public final class MyStrategy implements Strategy {
 
     private void setNextWP(int x, int y) {
         nextWP = new Point2I(x, y);
-        nextWPSubtile = new Point2I(x * SUBTILE_COUNT + SUBTILE_COUNT / 2,
-                                    y * SUBTILE_COUNT + SUBTILE_COUNT / 2);
+        nextWPSubtile = new Point2I(x * SUBTILE_COUNT + SUBTILE_COUNT / 2, y * SUBTILE_COUNT + SUBTILE_COUNT / 2);
+
+        for (int dx = 0; dx < SUBTILE_COUNT; ++dx) {
+            for (int dy = 0; dy < SUBTILE_COUNT; ++dy) {
+                Point2I option = new Point2I(x * SUBTILE_COUNT + dx, y * SUBTILE_COUNT + dy);
+                if (subtilesXY[option.x][option.y] != SubtileType.WALL) {
+                    nextWPSubtile = option;
+                }
+            }
+        }
     }
 
     enum SubtileType {WALL, ROAD};
