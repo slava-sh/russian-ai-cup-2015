@@ -59,7 +59,7 @@ public final class MyStrategy implements Strategy {
             }
 
             move.setEnginePower(1.0);
-            if (speedModule * speedModule * abs(angle) > 2.5 * 2.5 * PI) {
+            if (abs(angle) > PI / 4 && speedModule > STUCK_SPEED) {
                 move.setBrake(true);
             }
 
@@ -103,7 +103,8 @@ public final class MyStrategy implements Strategy {
         this.world = world;
         this.game = game;
 
-        if (subtilesXY == null) {
+        if (subtilesXY == null || needRebuildSubtiles) {
+            needRebuildSubtiles = false;
             createSubtiles();
         }
 
@@ -169,6 +170,7 @@ public final class MyStrategy implements Strategy {
     }
 
     private SubtileType[][] subtilesXY;
+    private boolean needRebuildSubtiles = false;
 
     private void createSubtiles() {
         subtilesXY = new SubtileType[world.getWidth() * SUBTILE_COUNT][world.getHeight() * SUBTILE_COUNT];
@@ -236,8 +238,11 @@ public final class MyStrategy implements Strategy {
                                 }
                                 break;
                             case EMPTY:
-                            // TODO: case UNKNOWN:
                                 subtileType = SubtileType.WALL;
+                                break;
+                            case UNKNOWN:
+                                subtileType = SubtileType.WALL;
+                                needRebuildSubtiles = true;
                                 break;
                             default:
                         }
