@@ -224,11 +224,18 @@ public final class MyStrategy implements Strategy {
             new Point2I(-1, -1),
     };
 
-    private Map<Endpoints, Point2I> bfsNextSubtile = new HashMap<Endpoints, Point2I>();
+    private Map<Endpoints, Point2I> dijkstraNextSubtile = new HashMap<Endpoints, Point2I>();
 
-    private void bfs(Point2I start, Point2I end) {
-        Queue<Point2I> queue = new LinkedList<Point2I>();
+    private void dijkstra(Point2I start, Point2I end) {
         Map<Point2I, Point2I> prev = new HashMap<Point2I, Point2I>();
+        Map<Point2I, Double> dist = new HashMap<Point2I, Double>();
+        dist.put(start, 0D);
+        Queue<Point2I> queue = new PriorityQueue<Point2I>(new Comparator<Point2I>() {
+            @Override
+            public int compare(Point2I a, Point2I b) {
+                return Double.compare(dist.get(a), dist.get(b));
+            }
+        });
         queue.add(start);
         while (!queue.isEmpty()) {
             Point2I vertex = queue.remove();
@@ -241,8 +248,12 @@ public final class MyStrategy implements Strategy {
                         && 0 <= nextVertex.y && nextVertex.y < subtilesXY[nextVertex.x].length
                         && subtilesXY[nextVertex.x][nextVertex.y] != SubtileType.WALL
                         && !prev.containsKey(nextVertex)) {
-                    prev.put(nextVertex, vertex);
-                    queue.add(nextVertex);
+                    Double option = dist.get(vertex) + hypot(nextVertex.x - vertex.x, nextVertex.y - vertex.y);
+                    if (option < dist.getOrDefault(nextVertex, Double.POSITIVE_INFINITY)) {
+                        prev.put(nextVertex, vertex);
+                        dist.put(nextVertex, option);
+                        queue.add(nextVertex);
+                    }
                 }
             }
         }
@@ -250,17 +261,17 @@ public final class MyStrategy implements Strategy {
         Point2I vertex = end;
         do {
             Point2I prevVertex = prev.get(vertex);
-            bfsNextSubtile.put(new Endpoints(prevVertex, end), vertex);
+            dijkstraNextSubtile.put(new Endpoints(prevVertex, end), vertex);
             vertex = prevVertex;
         } while (!vertex.equals(start));
     }
 
     private Point2I getNextSubtile(Point2I position) {
         Endpoints endpoints = new Endpoints(position, nextWPSubtile);
-        Point2I result = bfsNextSubtile.get(endpoints);
+        Point2I result = dijkstraNextSubtile.get(endpoints);
         if (result == null) {
-            bfs(position, nextWPSubtile);
-            result = bfsNextSubtile.get(endpoints);
+            dijkstra(position, nextWPSubtile);
+            result = dijkstraNextSubtile.get(endpoints);
         }
         return result;
     }
