@@ -8,16 +8,16 @@ public final class MyStrategy implements Strategy {
     private World world;
     private Game game;
 
-    private Point2I nextWP = new Point2I();
-    private Point2I nextWPSubtile = new Point2I();
+    private Point2I nextWP;
+    private Point2I nextWPSubtile;
 
     @Override
     public void move(Car self, World world, Game game, Move move) {
         updateFields(self, world, game);
 
         Point2I nextSubtile = getNextSubtile(toSubtilePoint(self));
-        double nextX = (nextSubtile.getX() + 0.5D) * getSubtileSize();
-        double nextY = (nextSubtile.getY() + 0.5D) * getSubtileSize();
+        double nextX = (nextSubtile.x + 0.5D) * getSubtileSize();
+        double nextY = (nextSubtile.y + 0.5D) * getSubtileSize();
         double angleToWaypoint = self.getAngleTo(nextX, nextY);
 
         //for (Bonus bonus : world.getBonuses()) {
@@ -100,10 +100,9 @@ public final class MyStrategy implements Strategy {
     }
 
     private void setNextWP(int x, int y) {
-        nextWP.setX(x);
-        nextWP.setY(y);
-        nextWPSubtile.setX(x * SUBTILE_COUNT + SUBTILE_COUNT / 2);
-        nextWPSubtile.setY(y * SUBTILE_COUNT + SUBTILE_COUNT / 2);
+        nextWP = new Point2I(x, y);
+        nextWPSubtile = new Point2I(x * SUBTILE_COUNT + SUBTILE_COUNT / 2,
+                                    y * SUBTILE_COUNT + SUBTILE_COUNT / 2);
     }
 
     enum SubtileType {WALL, ROAD};
@@ -263,100 +262,80 @@ public final class MyStrategy implements Strategy {
         }
         return result;
     }
+}
 
-    private static final class Point2I {
-        private int x;
-        private int y;
+class Point2I {
+    public final int x;
+    public final int y;
 
-        public Point2I(int x, int y) {
-            this.x = x;
-            this.y = y;
-        }
-
-        public Point2I() {
-
-        }
-
-        public int getX() {
-            return x;
-        }
-
-        public void setX(int x) {
-            this.x = x;
-        }
-
-        public int getY() {
-            return y;
-        }
-
-        public void setY(int y) {
-            this.y = y;
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-
-            Point2I point2I = (Point2I) o;
-
-            if (x != point2I.x) return false;
-            if (y != point2I.y) return false;
-
-            return true;
-        }
-
-        @Override
-        public int hashCode() {
-            int result = x;
-            result = 31 * result + y;
-            return result;
-        }
+    public Point2I(int x, int y) {
+        this.x = x;
+        this.y = y;
     }
 
-    private static final class Endpoints {
-        private Point2I start;
-        private Point2I end;
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
 
-        public Endpoints(Point2I start, Point2I end) {
-            this.start = start;
-            this.end = end;
-        }
+        Point2I point2I = (Point2I) o;
 
-        public Point2I getStart() {
-            return start;
-        }
+        if (x != point2I.x) return false;
+        if (y != point2I.y) return false;
 
-        public void setStart(Point2I start) {
-            this.start = start;
-        }
+        return true;
+    }
 
-        public Point2I getEnd() {
-            return end;
-        }
+    @Override
+    public int hashCode() {
+        int result = x;
+        result = 31 * result + y;
+        return result;
+    }
+}
 
-        public void setEnd(Point2I end) {
-            this.end = end;
-        }
+class Endpoints {
+    private Point2I start;
+    private Point2I end;
 
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
+    public Endpoints(Point2I start, Point2I end) {
+        this.start = start;
+        this.end = end;
+    }
 
-            Endpoints endpoints = (Endpoints) o;
+    public Point2I getStart() {
+        return start;
+    }
 
-            if (!start.equals(endpoints.start)) return false;
-            if (!end.equals(endpoints.end)) return false;
+    public void setStart(Point2I start) {
+        this.start = start;
+    }
 
-            return true;
-        }
+    public Point2I getEnd() {
+        return end;
+    }
 
-        @Override
-        public int hashCode() {
-            int result = start.hashCode();
-            result = 31 * result + end.hashCode();
-            return result;
-        }
+    public void setEnd(Point2I end) {
+        this.end = end;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        Endpoints endpoints = (Endpoints) o;
+
+        if (!start.equals(endpoints.start)) return false;
+        if (!end.equals(endpoints.end)) return false;
+
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = start.hashCode();
+        result = 31 * result + end.hashCode();
+        return result;
     }
 }
