@@ -4,28 +4,93 @@ import java.util.*;
 import static java.lang.StrictMath.*;
 
 public final class MyStrategy implements Strategy {
+    private static final double STUCK_SPEED = 5.0;
+    private static final int STUCK_TICKS = 40;
+    private static final int LONG_STUCK_TICKS = 150;
+
+    enum State { START, RUN, STUCK };
+
+    private State state = State.START;
+    private int stuckTickCount = 0;
+    private int stuckStartTick;
+    private Point2I stuckTarget;
+
     @Override
     public void move(Car self, World world, Game game, Move move) {
         updateFields(self, world, game);
 
-        Point2I nextSubtile = getNextSubtile(toSubtilePoint(self));
-        nextSubtile = getNextSubtile(nextSubtile);
-        nextSubtile = getNextSubtile(nextSubtile);
-        double nextX = (nextSubtile.x + 0.5D) * getSubtileSize();
-        double nextY = (nextSubtile.y + 0.5D) * getSubtileSize();
+        Point2I target = nextWPSubtile;
+        Point2I nextSubtile0 = getNextSubtile(toSubtilePoint(self), target);
+        Point2I nextSubtile1 = getNextSubtile(nextSubtile0, target);
+        Point2I nextSubtile2 = getNextSubtile(nextSubtile1, target);
+        double nextX = (nextSubtile2.x + 0.5) * getSubtileSize();
+        double nextY = (nextSubtile2.y + 0.5) * getSubtileSize();
         double angle = self.getAngleTo(nextX, nextY);
 
-        boolean isReverse = self.getEnginePower() < 0;
-
-        if (isReverse) {
-            move.setWheelTurn(-32.0D / PI * angle);
-        } else {
-            move.setWheelTurn(32.0D / PI * angle);
+        if (state == State.START && world.getTick() > game.getInitialFreezeDurationTicks()) {
+            state = State.RUN;
         }
 
-        move.setEnginePower(1);
-        if (abs(angle) > PI / 4) {
-            move.setBrake(true);
+        double speedModule = hypot(self.getSpeedX(), self.getSpeedY());
+        if (state == state.RUN) {
+            if (speedModule < STUCK_SPEED && ++stuckTickCount >= STUCK_TICKS){
+                state = State.STUCK;
+                stuckStartTick = world.getTick();
+            }
+        }
+        else if (state == State.STUCK
+                && (speedModule > STUCK_SPEED
+                || abs(angle) < PI / 6
+                || world.getTick() - stuckStartTick > LONG_STUCK_TICKS)) {
+            state = State.RUN;
+            stuckTickCount = 0;
+        }
+
+        if (state == State.STUCK) {
+            move.setEnginePower(-1.0);
+            move.setWheelTurn(-32.0 / PI * angle);
+        }
+        else {
+            boolean isReverse = self.getEnginePower() < 0.0;
+            if (isReverse) {
+                move.setWheelTurn(-32.0 / PI * angle);
+            } else {
+                move.setWheelTurn(32.0 / PI * angle);
+            }
+
+            move.setEnginePower(1.0);
+            if (abs(angle) > PI / 4 && speedModule > STUCK_SPEED) {
+                move.setBrake(true);
+            }
+
+            if (state != state.START) {
+                if (self.getProjectileCount() > 0) {
+                    for (Car enemy : world.getCars()) {
+                        if (!enemy.isTeammate()
+                                && self.getDistanceTo(enemy) < game.getTrackTileSize() * 1.5
+                                && abs(self.getAngleTo(enemy)) < game.getSideWasherAngle()) {
+                            move.setThrowProjectile(true);
+                            break;
+                        }
+                    }
+                }
+
+                if (self.getOilCanisterCount() > 0) {
+                    for (Car enemy : world.getCars()) {
+                        if (!enemy.isTeammate()
+                                && self.getDistanceTo(enemy) < game.getTrackTileSize() * 1.5
+                                && self.getDistanceTo(enemy) > game.getCarHeight() * 2
+                                && (self.getAngleTo(enemy) < -PI * 5 / 6 || self.getAngleTo(enemy) > PI * 5 / 6)) {
+                                move.setSpillOil(true);
+                                break;
+                            }
+                        }
+                    }
+
+                if (self.getNitroChargeCount() > 0) {
+                    move.setUseNitro(true);
+                }
+            }
         }
     }
 
@@ -78,7 +143,7 @@ public final class MyStrategy implements Strategy {
 
     enum SubtileType {WALL, ROAD};
 
-    private static final int SUBTILE_COUNT = 5;
+    private static final int SUBTILE_COUNT = 7;
     private static final int SUBTILE_LEFT;
     private static final int SUBTILE_RIGHT;
     private static final int SUBTILE_TOP;
@@ -171,6 +236,7 @@ public final class MyStrategy implements Strategy {
                                 }
                                 break;
                             case EMPTY:
+                            // TODO: case UNKNOWN:
                                 subtileType = SubtileType.WALL;
                                 break;
                             default:
@@ -205,7 +271,7 @@ public final class MyStrategy implements Strategy {
             }
         });
         prev.put(start, start);
-        dist.put(start, 0D);
+        dist.put(start, 0.0);
         queue.add(start);
         while (!queue.isEmpty()) {
             Point2I vertex = queue.remove();
@@ -236,11 +302,11 @@ public final class MyStrategy implements Strategy {
         } while (!vertex.equals(start));
     }
 
-    private Point2I getNextSubtile(Point2I position) {
-        Endpoints endpoints = new Endpoints(position, nextWPSubtile);
+    private Point2I getNextSubtile(Point2I position, Point2I target) {
+        Endpoints endpoints = new Endpoints(position, target);
         Point2I result = dijkstraNextSubtile.get(endpoints);
         if (result == null) {
-            dijkstra(position, nextWPSubtile);
+            dijkstra(position, target);
             result = dijkstraNextSubtile.get(endpoints);
         }
         return result;
@@ -263,7 +329,7 @@ class Point2I {
 
     private static int toInt(double value) {
         @SuppressWarnings("NumericCastThatLosesPrecision") int intValue = (int) value;
-        if (abs((double) intValue - value) < 1.0D) {
+        if (abs((double) intValue - value) < 1.0) {
             return intValue;
         }
         throw new IllegalArgumentException("Can't convert double " + value + " to int.");

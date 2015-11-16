@@ -365,7 +365,7 @@ public final class LocalTestRendererListener {
 
     enum SubtileType {WALL, ROAD};
 
-    private static final int SUBTILE_COUNT = 5;
+    private static final int SUBTILE_COUNT = 7;
     private static final int SUBTILE_LEFT;
     private static final int SUBTILE_RIGHT;
     private static final int SUBTILE_TOP;
