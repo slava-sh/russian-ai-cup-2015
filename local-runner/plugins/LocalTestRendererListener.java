@@ -31,15 +31,8 @@ public final class LocalTestRendererListener {
             fillRect(x, y, trackTileSize - 200.0D, trackTileSize - 200.0D);
         }
 
-        for (Car car : world.getCars()) {
-            if (car.getPlayerId() == myId) {
-                setNextWP(car.getNextWaypointX(), car.getNextWaypointY());
-                double x = nextWP.x * trackTileSize + 100.0D;
-                double y = nextWP.y * trackTileSize + 100.0D;
-                setColor(new Color(75, 255, 63));
-                fillRect(x, y, trackTileSize - 200.0D, trackTileSize - 200.0D);
-            }
-        }
+        setColor(new Color(75, 255, 63));
+        fillRect(nextWP.x * trackTileSize + 100.0D, nextWP.y * trackTileSize + 100.0D, trackTileSize - 200.0D, trackTileSize - 200.0D);
 
         drawSubtileGrid();
 
@@ -106,15 +99,11 @@ public final class LocalTestRendererListener {
             }
         }
 
-        for (Car car : world.getCars()) {
-            if (car.getPlayerId() == myId) {
-                Point2I subtile = new Point2I(toSubtileCoordinate(car.getX()), toSubtileCoordinate(car.getY()));
-                while (!subtile.equals(nextWPSubtile)) {
-                    setColor(Color.RED);
-                    fillSubtile(subtile);
-                    subtile = getNextSubtile(subtile);
-                }
-            }
+        Point2I subtile = new Point2I(toSubtileCoordinate(self.getX()), toSubtileCoordinate(self.getY()));
+        while (!subtile.equals(nextWPSubtile)) {
+            setColor(Color.RED);
+            drawSubtile(subtile);
+            subtile = getNextSubtile(subtile);
         }
 
         setColor(Color.BLACK);
@@ -124,15 +113,9 @@ public final class LocalTestRendererListener {
                                double left, double top, double width, double height) {
         updateFields(graphics, world, game, canvasWidth, canvasHeight, left, top, width, height);
 
-        for (Car car : world.getCars()) {
-            if (car.getPlayerId() == myId) {
-                double speedModule = hypot(car.getSpeedX(), car.getSpeedY());
-                //setColor(Color.WHITE);
-                //fillRect(car.getX() - 50.0D, car.getY() - 50.0D, 200.0D, 100.0D);
-                setColor(Color.BLACK);
-                drawString(String.format("%2.0f", speedModule) + "", FONT_SIZE_SMALL, car.getX(), car.getY());
-            }
-        }
+        double speedModule = hypot(self.getSpeedX(), self.getSpeedY());
+        setColor(Color.BLACK);
+        drawString(String.format("%2.0f", speedModule) + "", FONT_SIZE_SMALL, self.getX(), self.getY());
 
         setColor(Color.BLACK);
     }
@@ -229,6 +212,14 @@ public final class LocalTestRendererListener {
 
     private void fillSubtile(int x, int y) {
         fillRect(x * getSubtileSize(), y * getSubtileSize(), getSubtileSize(), getSubtileSize());
+    }
+
+    private void drawSubtile(Point2I p) {
+        drawSubtile(p.getX(), p.getY());
+    }
+
+    private void drawSubtile(int x, int y) {
+        drawRect(x * getSubtileSize(), y * getSubtileSize(), getSubtileSize(), getSubtileSize());
     }
 
     private void fillCircle(double centerX, double centerY, double radius) {
