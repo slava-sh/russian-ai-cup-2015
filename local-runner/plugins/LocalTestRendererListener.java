@@ -5,7 +5,9 @@ import java.awt.Color;
 import java.awt.Font;
 
 import java.lang.Override;
+import java.lang.String;
 import java.util.*;
+import java.util.LinkedList;
 
 import static java.lang.StrictMath.*;
 
@@ -86,9 +88,9 @@ public final class LocalTestRendererListener {
         setColor(Color.BLACK);
         drawString("" + subtileSum, FONT_SIZE_BIG, game.getTrackTileSize(), game.getTrackTileSize());
 
-        fillWallSubtiles();
+        // fillWallSubtiles();
 
-        renderBfs();
+        // renderBfs();
 
         setColor(Color.BLACK);
     }
@@ -96,6 +98,8 @@ public final class LocalTestRendererListener {
     public void afterDrawScene(Graphics graphics, World world, Game game, int canvasWidth, int canvasHeight,
                                double left, double top, double width, double height) {
         updateFields(graphics, world, game, canvasWidth, canvasHeight, left, top, width, height);
+
+        drawTrajectory();
 
         double speedModule = hypot(self.getSpeedX(), self.getSpeedY());
         setColor(Color.BLACK);
@@ -154,6 +158,35 @@ public final class LocalTestRendererListener {
         setNextWP(self.getNextWaypointX(), self.getNextWaypointY());
     }
 
+    private LinkedList<Point2I> realTrajectory = new LinkedList<Point2I>();
+    private LinkedList<Point2I> predictedTrajectory = new LinkedList<Point2I>();
+
+    private void drawTrajectory() {
+        double TIME = 50;
+
+        double speedModule = hypot(self.getSpeedX(), self.getSpeedY());
+        // drawLine(self.getX(), self.getY(), self.getX() + self.getSpeedX() * TIME, self.getY() + self.getSpeedY() * TIME);
+
+        if (world.getTick() % TIME == 0) {
+            realTrajectory.add(new Point2I(self.getX(), self.getY()));
+            predictedTrajectory.add(new Point2I(self.getX() + self.getSpeedX() * TIME, self.getY() + self.getSpeedY() * TIME));
+        }
+
+        Vector2D speed = new Vector2D(self.getSpeedX(), self.getSpeedY());
+        Vector2D speedNormal = speed.getPerp().normalize();
+        // drawVector(self, speedNormal.copy().multiply(game.getTrackTileSize()));
+        // self.getWheelTurn() * game.getCarAngularSpeedFactor()
+
+        for (Point2I point : predictedTrajectory) {
+            setColor(Color.CYAN);
+            fillCircle(point.x, point.y, game.getWasherRadius());
+        }
+        for (Point2I point : realTrajectory) {
+            setColor(Color.RED);
+            fillCircle(point.x, point.y, game.getWasherRadius());
+        }
+    }
+
     private void renderBfs() {
         Point2I subtile = new Point2I(toSubtileCoordinate(self.getX()), toSubtileCoordinate(self.getY()));
         int subtileI = 0;
@@ -202,6 +235,10 @@ public final class LocalTestRendererListener {
                 }
             }
         }
+    }
+
+    private void drawVector(Unit unit, Vector2D vector) {
+        drawLine(unit.getX(), unit.getY(), unit.getX() + vector.getX(), unit.getY() + vector.getY());
     }
 
     private void setColor(Color c) {
@@ -586,5 +623,158 @@ class Point2D {
 
     public void setY(double y) {
         this.y = y;
+    }
+}
+
+/*
+ * Based on com.codeforces.commons.geometry.Vector2D
+ */
+class Vector2D {
+    public static final double DEFAULT_EPSILON = 1.0E-6D;
+
+    private double x;
+    private double y;
+
+    public Vector2D(double x, double y) {
+        this.x = x;
+        this.y = y;
+    }
+
+    public Vector2D(double x1, double y1, double x2, double y2) {
+        this(x2 - x1, y2 - y1);
+    }
+
+    public Vector2D(Vector2D other) {
+        this(other.getX(), other.getY());
+    }
+
+    public double getX() {
+        return x;
+    }
+
+    public void setX(double x) {
+        this.x = x;
+    }
+
+    public double getY() {
+        return y;
+    }
+
+    public void setY(double y) {
+        this.y = y;
+    }
+
+    public Vector2D add(Vector2D other) {
+        setX(getX() + other.getX());
+        setY(getY() + other.getY());
+        return this;
+    }
+
+    public Vector2D subtract(Vector2D other) {
+        setX(getX() - other.getX());
+        setY(getY() - other.getY());
+        return this;
+    }
+
+    public Vector2D multiply(double factor) {
+        setX(factor * getX());
+        setY(factor * getY());
+        return this;
+    }
+
+    public Vector2D rotate(double angle) {
+        double cos = cos(angle);
+        double sin = sin(angle);
+        double x = getX();
+        double y = getY();
+        setX(x * cos - y * sin);
+        setY(x * sin + y * cos);
+        return this;
+    }
+
+    public double dotProduct(Vector2D other) {
+        return getX() * other.getX() + getY() * other.getY();
+    }
+
+    public Vector2D negate() {
+        setX(-getX());
+        setY(-getY());
+        return this;
+    }
+
+    public Vector2D normalize() {
+        double length = getLength();
+        if (length == 0.0D) {
+            throw new IllegalStateException("Can't set angle of zero-width vector.");
+        }
+        setX(getX() / length);
+        setY(getY() / length);
+        return this;
+    }
+
+    public double getAngle() {
+        return atan2(getY(), getX());
+    }
+
+    public Vector2D setAngle(double angle) {
+        double length = getLength();
+        if (length == 0.0D) {
+            throw new IllegalStateException("Can't set angle of zero-width vector.");
+        }
+        setX(cos(angle) * length);
+        setY(sin(angle) * length);
+        return this;
+    }
+
+    public double getAngle(Vector2D other) {
+        double dot = getX() * other.getX() + getY() * other.getY();
+        double cross = getX() * other.getY() - getY() * other.getX();
+        return atan2(cross, dot);
+    }
+
+    public double getLength() {
+        return hypot(getX(), getY());
+    }
+
+    public Vector2D setLength(double length) {
+        double currentLength = getLength();
+        if (currentLength == 0.0D) {
+            throw new IllegalStateException("Can't resize zero-width vector.");
+        }
+        return multiply(length / currentLength);
+    }
+
+    public double getSquaredLength() {
+        return getX() * getX() + getY() * getY();
+    }
+
+    public Vector2D setSquaredLength(double squaredLength) {
+        double currentSquaredLength = getSquaredLength();
+        if (currentSquaredLength == 0.0D) {
+            throw new IllegalStateException("Can't resize zero-width vector.");
+        }
+        return multiply(sqrt(squaredLength / currentSquaredLength));
+    }
+
+    public Vector2D copy() {
+        return new Vector2D(this);
+    }
+
+    public Vector2D copyNegate() {
+        return new Vector2D(-getX(), -getY());
+    }
+
+    public boolean nearlyEquals(Vector2D other, double epsilon) {
+        return other != null
+                && abs(getX() - other.getX()) < epsilon
+                && abs(getY() - other.getY()) < epsilon;
+    }
+
+    public boolean nearlyEquals(Vector2D other) {
+        return nearlyEquals(other, DEFAULT_EPSILON);
+    }
+
+    public Vector2D getPerp() {
+        return new Vector2D(-getY(), getX());
     }
 }
