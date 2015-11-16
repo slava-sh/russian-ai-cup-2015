@@ -20,17 +20,13 @@ public final class MyStrategy implements Strategy {
         updateFields(self, world, game);
 
         Point2I target = nextWPSubtile;
-        Point2I nextSubtile0 = getNextSubtile(toSubtilePoint(self), target);
-        Point2I nextSubtile1 = getNextSubtile(nextSubtile0, target);
-        Point2I nextSubtile2 = getNextSubtile(nextSubtile1, target);
-        nextSubtile2 = getNextSubtile(nextSubtile2, target);
-        nextSubtile2 = getNextSubtile(nextSubtile2, target);
-        nextSubtile2 = getNextSubtile(nextSubtile2, target);
-        nextSubtile2 = getNextSubtile(nextSubtile2, target);
-        nextSubtile2 = getNextSubtile(nextSubtile2, target);
-        nextSubtile2 = getNextSubtile(nextSubtile2, target);
-        double nextX = (nextSubtile2.x + 0.5) * getSubtileSize();
-        double nextY = (nextSubtile2.y + 0.5) * getSubtileSize();
+        Point2I nextSubtile = getNextSubtile(toSubtilePoint(self), target);
+        nextSubtile = getNextSubtile(nextSubtile, target);
+        nextSubtile = getNextSubtile(nextSubtile, target);
+        nextSubtile = getNextSubtile(nextSubtile, target);
+        nextSubtile = getNextSubtile(nextSubtile, target);
+        double nextX = (nextSubtile.x + 0.5) * getSubtileSize();
+        double nextY = (nextSubtile.y + 0.5) * getSubtileSize();
         double angle = self.getAngleTo(nextX, nextY);
 
         if (state == State.START && world.getTick() > game.getInitialFreezeDurationTicks()) {
@@ -150,7 +146,7 @@ public final class MyStrategy implements Strategy {
 
     enum SubtileType {WALL, ROAD};
 
-    private static final int SUBTILE_COUNT = 7;
+    private static final int SUBTILE_COUNT = 5;
     private static final int SUBTILE_LEFT;
     private static final int SUBTILE_RIGHT;
     private static final int SUBTILE_TOP;
