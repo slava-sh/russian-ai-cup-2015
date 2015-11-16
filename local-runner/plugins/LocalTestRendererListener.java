@@ -133,16 +133,19 @@ public final class LocalTestRendererListener {
     private void renderBfs() {
         Point2I subtile = new Point2I(toSubtileCoordinate(self.getX()), toSubtileCoordinate(self.getY()));
         int subtileI = 0;
-        do {
+        while (true) {
             if (subtileI == 2) {
                 setColor(Color.PINK);
                 fillSubtile(subtile);
             }
             setColor(Color.RED);
             drawSubtile(subtile);
+            if (subtile.equals(nextWPSubtile)) {
+                break;
+            }
             subtile = getNextSubtile(subtile);
             ++subtileI;
-        } while (!subtile.equals(nextWPSubtile));
+        }
     }
 
     private void fillWallSubtiles() {
