@@ -59,7 +59,7 @@ public final class MyStrategy implements Strategy {
             }
 
             move.setEnginePower(1.0);
-            if (abs(angle) > PI / 4 && speedModule > STUCK_SPEED) {
+            if (speedModule * speedModule * abs(angle) > 2.5 * 2.5 * PI) {
                 move.setBrake(true);
             }
 
@@ -87,7 +87,7 @@ public final class MyStrategy implements Strategy {
                         }
                     }
 
-                if (self.getNitroChargeCount() > 0) {
+                if (self.getNitroChargeCount() > 0 && abs(angle) < PI / 10) {
                     move.setUseNitro(true);
                 }
             }
