@@ -256,6 +256,27 @@ class Point2I {
         this.y = y;
     }
 
+    public Point2I(double x, double y) {
+        this.x = toInt(round(x));
+        this.y = toInt(round(y));
+    }
+
+    private static int toInt(double value) {
+        @SuppressWarnings("NumericCastThatLosesPrecision") int intValue = (int) value;
+        if (abs((double) intValue - value) < 1.0D) {
+            return intValue;
+        }
+        throw new IllegalArgumentException("Can't convert double " + value + " to int.");
+    }
+
+    public int getX() {
+        return x;
+    }
+
+    public int getY() {
+        return y;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

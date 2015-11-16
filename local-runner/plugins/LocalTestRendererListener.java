@@ -95,56 +95,6 @@ public final class LocalTestRendererListener {
         setColor(Color.BLACK);
     }
 
-    private Graphics graphics;
-    private World world;
-    private Game game;
-
-    private int canvasWidth;
-    private int canvasHeight;
-
-    private double left;
-    private double top;
-    private double width;
-    private double height;
-
-    private long myId = -1;
-    private Car self;
-
-    private void updateFields(Graphics graphics, World world, Game game, int canvasWidth, int canvasHeight,
-                              double left, double top, double width, double height) {
-        this.graphics = graphics;
-        this.world = world;
-        this.game = game;
-
-        this.canvasWidth = canvasWidth;
-        this.canvasHeight = canvasHeight;
-
-        this.left = left;
-        this.top = top;
-        this.width = width;
-        this.height = height;
-
-        if (myId == -1) {
-            for (Player player : world.getPlayers()) {
-                if (player.getName().equals("MyStrategy")) {
-                    myId = player.getId();
-                }
-            }
-        }
-
-        for (Car car : world.getCars()) {
-            if (car.getPlayerId() == myId) {
-                this.self = car;
-            }
-        }
-
-        if (subtilesXY == null) {
-            createSubtiles();
-        }
-
-        setNextWP(self.getNextWaypointX(), self.getNextWaypointY());
-    }
-
     private void countSubtiles() {
         int subtileSum = 0;
         setColor(new Color(240, 240, 240));
@@ -329,17 +279,67 @@ public final class LocalTestRendererListener {
         return new Point2I((x - left) * canvasWidth / width, (y - top) * canvasHeight / height);
     }
 
+    private Graphics graphics;
+    private World world;
+    private Game game;
+
+    private int canvasWidth;
+    private int canvasHeight;
+
+    private double left;
+    private double top;
+    private double width;
+    private double height;
+
+    private long myId = -1;
+    private Car self;
+
+    private void updateFields(Graphics graphics, World world, Game game, int canvasWidth, int canvasHeight,
+                              double left, double top, double width, double height) {
+        this.graphics = graphics;
+        this.world = world;
+        this.game = game;
+
+        this.canvasWidth = canvasWidth;
+        this.canvasHeight = canvasHeight;
+
+        this.left = left;
+        this.top = top;
+        this.width = width;
+        this.height = height;
+
+        if (myId == -1) {
+            for (Player player : world.getPlayers()) {
+                if (player.getName().equals("MyStrategy")) {
+                    myId = player.getId();
+                }
+            }
+        }
+
+        for (Car car : world.getCars()) {
+            if (car.getPlayerId() == myId) {
+                this.self = car;
+            }
+        }
+
+        if (subtilesXY == null) {
+            createSubtiles();
+        }
+
+        setNextWP(self.getNextWaypointX(), self.getNextWaypointY());
+    }
+
     private Point2I nextWP;
     private Point2I nextWPSubtile;
 
     private void setNextWP(int x, int y) {
         nextWP = new Point2I(x, y);
         nextWPSubtile = new Point2I(x * SUBTILE_COUNT + SUBTILE_COUNT / 2,
-                y * SUBTILE_COUNT + SUBTILE_COUNT / 2);
+                                    y * SUBTILE_COUNT + SUBTILE_COUNT / 2);
 
         int[] afterNextWPArray = world.getWaypoints()[(self.getNextWaypointIndex() + 1) % world.getWaypoints().length];
         Point2I afterNextWPSubtile = new Point2I(afterNextWPArray[0] * SUBTILE_COUNT + SUBTILE_COUNT / 2,
-                afterNextWPArray[1] * SUBTILE_COUNT + SUBTILE_COUNT / 2);
+                                                 afterNextWPArray[1] * SUBTILE_COUNT + SUBTILE_COUNT / 2);
 
         int dist = manhattanDistance(nextWPSubtile, afterNextWPSubtile);
         for (int dx = 0; dx < SUBTILE_COUNT; ++dx) {
