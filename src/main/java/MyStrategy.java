@@ -198,13 +198,14 @@ public final class MyStrategy implements Strategy {
     private void dijkstra(Point2I start, Point2I end) {
         Map<Point2I, Point2I> prev = new HashMap<Point2I, Point2I>();
         Map<Point2I, Double> dist = new HashMap<Point2I, Double>();
-        dist.put(start, 0D);
         Queue<Point2I> queue = new PriorityQueue<Point2I>(new Comparator<Point2I>() {
             @Override
             public int compare(Point2I a, Point2I b) {
                 return Double.compare(dist.get(a), dist.get(b));
             }
         });
+        prev.put(start, start);
+        dist.put(start, 0D);
         queue.add(start);
         while (!queue.isEmpty()) {
             Point2I vertex = queue.remove();
@@ -242,7 +243,6 @@ public final class MyStrategy implements Strategy {
             dijkstra(position, nextWPSubtile);
             result = dijkstraNextSubtile.get(endpoints);
         }
-        System.out.println("next for " + position + " is " + result);
         return result;
     }
 }
@@ -295,6 +295,14 @@ class Point2I {
         int result = x;
         result = 31 * result + y;
         return result;
+    }
+
+    @Override
+    public String toString() {
+        return "Point2I{" +
+                "x=" + x +
+                ", y=" + y +
+                '}';
     }
 }
 
