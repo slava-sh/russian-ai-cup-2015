@@ -23,6 +23,12 @@ public final class MyStrategy implements Strategy {
         Point2I nextSubtile0 = getNextSubtile(toSubtilePoint(self), target);
         Point2I nextSubtile1 = getNextSubtile(nextSubtile0, target);
         Point2I nextSubtile2 = getNextSubtile(nextSubtile1, target);
+        nextSubtile2 = getNextSubtile(nextSubtile2, target);
+        nextSubtile2 = getNextSubtile(nextSubtile2, target);
+        nextSubtile2 = getNextSubtile(nextSubtile2, target);
+        nextSubtile2 = getNextSubtile(nextSubtile2, target);
+        nextSubtile2 = getNextSubtile(nextSubtile2, target);
+        nextSubtile2 = getNextSubtile(nextSubtile2, target);
         double nextX = (nextSubtile2.x + 0.5) * getSubtileSize();
         double nextY = (nextSubtile2.y + 0.5) * getSubtileSize();
         double angle = self.getAngleTo(nextX, nextY);

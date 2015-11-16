@@ -35,7 +35,7 @@ public final class LocalTestRendererListener {
         setColor(new Color(75, 255, 63));
         fillRect(nextWP.x * trackTileSize + 100.0D, nextWP.y * trackTileSize + 100.0D, trackTileSize - 200.0D, trackTileSize - 200.0D);
 
-        //drawSubtileGrid();
+        drawSubtileGrid();
 
         int nextWPId = 1;
         for (int[] waypoint : world.getWaypoints()) {
@@ -134,7 +134,7 @@ public final class LocalTestRendererListener {
         Point2I subtile = new Point2I(toSubtileCoordinate(self.getX()), toSubtileCoordinate(self.getY()));
         int subtileI = 0;
         while (true) {
-            if (subtileI == 2) {
+            if (subtileI == 8) {
                 setColor(Color.PINK);
                 fillSubtile(subtile);
             }
