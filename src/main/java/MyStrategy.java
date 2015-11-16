@@ -15,41 +15,19 @@ public final class MyStrategy implements Strategy {
     public void move(Car self, World world, Game game, Move move) {
         updateFields(self, world, game);
 
-        double nextWaypointX = (self.getNextWaypointX() + 0.5D) * game.getTrackTileSize();
-        double nextWaypointY = (self.getNextWaypointY() + 0.5D) * game.getTrackTileSize();
+        Point2I nextSubtile = getNextSubtile(toSubtilePoint(self));
+        double nextX = (nextSubtile.getX() + 0.5D) * getSubtileSize();
+        double nextY = (nextSubtile.getY() + 0.5D) * getSubtileSize();
+        double angleToWaypoint = self.getAngleTo(nextX, nextY);
 
-        double cornerTileOffset = 0.25D * game.getTrackTileSize();
-
-        switch (world.getTilesXY()[self.getNextWaypointX()][self.getNextWaypointY()]) {
-            case LEFT_TOP_CORNER:
-                nextWaypointX += cornerTileOffset;
-                nextWaypointY += cornerTileOffset;
-                break;
-            case RIGHT_TOP_CORNER:
-                nextWaypointX -= cornerTileOffset;
-                nextWaypointY += cornerTileOffset;
-                break;
-            case LEFT_BOTTOM_CORNER:
-                nextWaypointX += cornerTileOffset;
-                nextWaypointY -= cornerTileOffset;
-                break;
-            case RIGHT_BOTTOM_CORNER:
-                nextWaypointX -= cornerTileOffset;
-                nextWaypointY -= cornerTileOffset;
-                break;
-            default:
-        }
-
-        double angleToWaypoint = self.getAngleTo(nextWaypointX, nextWaypointY);
-
-        for (Bonus bonus : world.getBonuses()) {
-            if (self.getDistanceTo(bonus) < game.getTrackTileSize() * 2D
-                    && abs(angleToWaypoint - self.getAngleTo(bonus)) < PI / 8.0D) {
-                nextWaypointX = bonus.getX();
-                nextWaypointY = bonus.getY();
-                break;
-            }
-        }
+        //for (Bonus bonus : world.getBonuses()) {
+        //    if (self.getDistanceTo(bonus) < game.getTrackTileSize() * 2D
+        //            && abs(angleToWaypoint - self.getAngleTo(bonus)) < PI / 8.0D) {
+        //        nextX = bonus.getX();
+        //        nextWaypointY = bonus.getY();
+        //        break;
+        //    }
+        //}
 
         double speedModule = hypot(self.getSpeedX(), self.getSpeedY());
 
@@ -145,6 +123,10 @@ public final class MyStrategy implements Strategy {
 
     private int toSubtileCoordinate(double coordinate) {
         return (int) (coordinate / getSubtileSize());
+    }
+
+    private Point2I toSubtilePoint(Unit unit) {
+        return new Point2I(toSubtileCoordinate(unit.getX()), toSubtileCoordinate(unit.getY()));
     }
 
     private double getSubtileSize() {
@@ -286,12 +268,13 @@ public final class MyStrategy implements Strategy {
         private int x;
         private int y;
 
-        private Point2I(int x, int y) {
+        public Point2I(int x, int y) {
             this.x = x;
             this.y = y;
         }
 
-        private Point2I() {
+        public Point2I() {
+
         }
 
         public int getX() {
