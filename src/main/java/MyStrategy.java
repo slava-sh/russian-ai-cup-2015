@@ -4,13 +4,6 @@ import java.util.*;
 import static java.lang.StrictMath.*;
 
 public final class MyStrategy implements Strategy {
-    private Car self;
-    private World world;
-    private Game game;
-
-    private Point2I nextWP;
-    private Point2I nextWPSubtile;
-
     @Override
     public void move(Car self, World world, Game game, Move move) {
         updateFields(self, world, game);
@@ -89,15 +82,24 @@ public final class MyStrategy implements Strategy {
         }
     }
 
+    private Car self;
+    private World world;
+    private Game game;
+
     private void updateFields(Car self, World world, Game game) {
         this.self = self;
         this.world = world;
         this.game = game;
+
         if (subtilesXY == null) {
             createSubtiles();
         }
+
         setNextWP(self.getNextWaypointX(), self.getNextWaypointY());
     }
+
+    private Point2I nextWP;
+    private Point2I nextWPSubtile;
 
     private void setNextWP(int x, int y) {
         nextWP = new Point2I(x, y);

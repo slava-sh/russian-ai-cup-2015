@@ -11,62 +11,17 @@ import java.util.HashMap;
 import static java.lang.StrictMath.*;
 
 public final class LocalTestRendererListener {
-    private Graphics graphics;
-    private World world;
-    private Game game;
-
-    private int canvasWidth;
-    private int canvasHeight;
-
-    private double left;
-    private double top;
-    private double width;
-    private double height;
-
     private static final int FONT_SIZE_BIG = 42;
     private static final int FONT_SIZE_SMALL = 18;
 
     private static int currentWPId = -1;
-    private static long myId = -1;
-
-    enum SubtileType {WALL, ROAD};
-
-    private static final int SUBTILE_COUNT = 5;
-    private static final int SUBTILE_LEFT;
-    private static final int SUBTILE_RIGHT;
-    private static final int SUBTILE_TOP;
-    private static final int SUBTILE_BOTTOM;
-
-    static {
-        SUBTILE_LEFT = 0;
-        SUBTILE_RIGHT = SUBTILE_COUNT - 1;
-        SUBTILE_TOP = 0;
-        SUBTILE_BOTTOM = SUBTILE_COUNT - 1;
-    }
-
-    private SubtileType[][] subtilesXY;
-    private Point2I nextWP = new Point2I();
-    private Point2I nextWPSubtile = new Point2I();
-    private int nextWPId = 1;
 
     public void beforeDrawScene(Graphics graphics, World world, Game game, int canvasWidth, int canvasHeight,
                                 double left, double top, double width, double height) {
         updateFields(graphics, world, game, canvasWidth, canvasHeight, left, top, width, height);
 
-        if (subtilesXY == null) {
-            createSubtiles();
-        }
-
         double trackTileSize = game.getTrackTileSize();
         double nOffset = 60.0D;
-
-        if (myId == -1) {
-            for (Player player : world.getPlayers()) {
-                if (player.getName().equals("MyStrategy")) {
-                    myId = player.getId();
-                }
-            }
-        }
 
         for (int[] waypoint : world.getWaypoints()) {
             double x = waypoint[0] * trackTileSize + 100.0D;
@@ -79,9 +34,8 @@ public final class LocalTestRendererListener {
         for (Car car : world.getCars()) {
             if (car.getPlayerId() == myId) {
                 setNextWP(car.getNextWaypointX(), car.getNextWaypointY());
-                double x = nextWP.getX() * trackTileSize + 100.0D;
-                double y = nextWP.getY() * trackTileSize + 100.0D;
-
+                double x = nextWP.x * trackTileSize + 100.0D;
+                double y = nextWP.y * trackTileSize + 100.0D;
                 setColor(new Color(75, 255, 63));
                 fillRect(x, y, trackTileSize - 200.0D, trackTileSize - 200.0D);
             }
@@ -89,12 +43,13 @@ public final class LocalTestRendererListener {
 
         drawSubtileGrid();
 
+        int nextWPId = 1;
         for (int[] waypoint : world.getWaypoints()) {
-            if (world.getMapName().equals("map01") && currentWPId > 6 && nextWP.getX() == 3 && nextWP.getY() == 4) {
+            if (world.getMapName().equals("map01") && currentWPId > 6 && nextWP.x == 3 && nextWP.y == 4) {
                 currentWPId = 11;
                 break;
             }
-            if (nextWP.getX() == waypoint[0] && nextWP.getY() == waypoint[1]) {
+            if (nextWP.x == waypoint[0] && nextWP.y == waypoint[1]) {
                 currentWPId = nextWPId - 1;
                 break;
             }
@@ -182,6 +137,202 @@ public final class LocalTestRendererListener {
         setColor(Color.BLACK);
     }
 
+    private Graphics graphics;
+    private World world;
+    private Game game;
+
+    private int canvasWidth;
+    private int canvasHeight;
+
+    private double left;
+    private double top;
+    private double width;
+    private double height;
+
+    private long myId = -1;
+    private Car self;
+
+    private void updateFields(Graphics graphics, World world, Game game, int canvasWidth, int canvasHeight,
+                              double left, double top, double width, double height) {
+        this.graphics = graphics;
+        this.world = world;
+        this.game = game;
+
+        this.canvasWidth = canvasWidth;
+        this.canvasHeight = canvasHeight;
+
+        this.left = left;
+        this.top = top;
+        this.width = width;
+        this.height = height;
+
+        if (myId == -1) {
+            for (Player player : world.getPlayers()) {
+                if (player.getName().equals("MyStrategy")) {
+                    myId = player.getId();
+                }
+            }
+        }
+
+        for (Car car : world.getCars()) {
+            if (car.getPlayerId() == myId) {
+                this.self = car;
+            }
+        }
+
+        if (subtilesXY == null) {
+            createSubtiles();
+        }
+
+        setNextWP(self.getNextWaypointX(), self.getNextWaypointY());
+    }
+
+    private void drawSubtileGrid() {
+        setColor(new Color(240, 240, 240));
+        for (int i = 0; i < world.getWidth(); ++i) {
+            for (int j = 0; j < world.getWidth(); ++j) {
+                if (world.getTilesXY()[i][j] != TileType.EMPTY) {
+                    double minX = i * game.getTrackTileSize();
+                    double maxX = (i + 1) * game.getTrackTileSize();
+                    double minY = j * game.getTrackTileSize();
+                    double maxY = (j + 1) * game.getTrackTileSize();
+                    for (double x = minX; x < maxX; x += getSubtileSize()) {
+                        drawLine(x, minY, x, maxY);
+                    }
+                    for (double y = minY; y < maxY; y += getSubtileSize()) {
+                        drawLine(minX, y, maxX, y);
+                    }
+                }
+            }
+        }
+    }
+
+    private void setColor(Color c) {
+        graphics.setColor(c);
+    }
+
+    private void drawString(String text, int fontSize, double x1, double y1) {
+        Point2I stringBegin = toCanvasPosition(x1, y1);
+        graphics.setFont(new Font("Serif", Font.PLAIN, fontSize));
+        graphics.drawString(text, stringBegin.getX(), stringBegin.getY());
+    }
+
+    private void drawLine(double x1, double y1, double x2, double y2) {
+        Point2I lineBegin = toCanvasPosition(x1, y1);
+        Point2I lineEnd = toCanvasPosition(x2, y2);
+        graphics.drawLine(lineBegin.getX(), lineBegin.getY(), lineEnd.getX(), lineEnd.getY());
+    }
+
+    private void fillSubtile(Point2I p) {
+        fillSubtile(p.getX(), p.getY());
+    }
+
+    private void fillSubtile(int x, int y) {
+        fillRect(x * getSubtileSize(), y * getSubtileSize(), getSubtileSize(), getSubtileSize());
+    }
+
+    private void fillCircle(double centerX, double centerY, double radius) {
+        Point2I topLeft = toCanvasPosition(centerX - radius, centerY - radius);
+        Point2I size = toCanvasOffset(2.0D * radius, 2.0D * radius);
+
+        graphics.fillOval(topLeft.getX(), topLeft.getY(), size.getX(), size.getY());
+    }
+
+    private void drawCircle(double centerX, double centerY, double radius) {
+        Point2I topLeft = toCanvasPosition(centerX - radius, centerY - radius);
+        Point2I size = toCanvasOffset(2.0D * radius, 2.0D * radius);
+
+        graphics.drawOval(topLeft.getX(), topLeft.getY(), size.getX(), size.getY());
+    }
+
+    private void fillArc(double centerX, double centerY, double radius, int startAngle, int arcAngle) {
+        Point2I topLeft = toCanvasPosition(centerX - radius, centerY - radius);
+        Point2I size = toCanvasOffset(2.0D * radius, 2.0D * radius);
+
+        graphics.fillArc(topLeft.getX(), topLeft.getY(), size.getX(), size.getY(), startAngle, arcAngle);
+    }
+
+    private void drawArc(double centerX, double centerY, double radius, int startAngle, int arcAngle) {
+        Point2I topLeft = toCanvasPosition(centerX - radius, centerY - radius);
+        Point2I size = toCanvasOffset(2.0D * radius, 2.0D * radius);
+
+        graphics.drawArc(topLeft.getX(), topLeft.getY(), size.getX(), size.getY(), startAngle, arcAngle);
+    }
+
+    private void fillRect(double left, double top, double width, double height) {
+        Point2I topLeft = toCanvasPosition(left, top);
+        Point2I size = toCanvasOffset(width, height);
+
+        graphics.fillRect(topLeft.getX(), topLeft.getY(), size.getX(), size.getY());
+    }
+
+    private void drawRect(double left, double top, double width, double height) {
+        Point2I topLeft = toCanvasPosition(left, top);
+        Point2I size = toCanvasOffset(width, height);
+
+        graphics.drawRect(topLeft.getX(), topLeft.getY(), size.getX(), size.getY());
+    }
+
+    private void drawPolygon(Point2D... points) {
+        int pointCount = points.length;
+
+        for (int pointIndex = 1; pointIndex < pointCount; ++pointIndex) {
+            Point2D pointA = points[pointIndex];
+            Point2D pointB = points[pointIndex - 1];
+            drawLine(pointA.getX(), pointA.getY(), pointB.getX(), pointB.getY());
+        }
+
+        Point2D pointA = points[0];
+        Point2D pointB = points[pointCount - 1];
+        drawLine(pointA.getX(), pointA.getY(), pointB.getX(), pointB.getY());
+    }
+
+    private Point2I toCanvasOffset(double x, double y) {
+        return new Point2I(x * canvasWidth / width, y * canvasHeight / height);
+    }
+
+    private Point2I toCanvasPosition(double x, double y) {
+        return new Point2I((x - left) * canvasWidth / width, (y - top) * canvasHeight / height);
+    }
+
+    private Point2I nextWP;
+    private Point2I nextWPSubtile;
+
+    private void setNextWP(int x, int y) {
+        nextWP = new Point2I(x, y);
+        nextWPSubtile = new Point2I(x * SUBTILE_COUNT + SUBTILE_COUNT / 2,
+                y * SUBTILE_COUNT + SUBTILE_COUNT / 2);
+    }
+
+    enum SubtileType {WALL, ROAD};
+
+    private static final int SUBTILE_COUNT = 5;
+    private static final int SUBTILE_LEFT;
+    private static final int SUBTILE_RIGHT;
+    private static final int SUBTILE_TOP;
+    private static final int SUBTILE_BOTTOM;
+
+    static {
+        SUBTILE_LEFT = 0;
+        SUBTILE_RIGHT = SUBTILE_COUNT - 1;
+        SUBTILE_TOP = 0;
+        SUBTILE_BOTTOM = SUBTILE_COUNT - 1;
+    }
+
+    private int toSubtileCoordinate(double coordinate) {
+        return (int) (coordinate / getSubtileSize());
+    }
+
+    private Point2I toSubtilePoint(Unit unit) {
+        return new Point2I(toSubtileCoordinate(unit.getX()), toSubtileCoordinate(unit.getY()));
+    }
+
+    private double getSubtileSize() {
+        return game.getTrackTileSize() / SUBTILE_COUNT;
+    }
+
+    private SubtileType[][] subtilesXY;
+
     private void createSubtiles() {
         subtilesXY = new SubtileType[world.getWidth() * SUBTILE_COUNT][world.getHeight() * SUBTILE_COUNT];
         for (int tile_x = 0; tile_x < world.getWidth(); ++tile_x) {
@@ -259,66 +410,6 @@ public final class LocalTestRendererListener {
         }
     }
 
-    private Point2I getNextSubtile(Point2I position) {
-        Endpoints endpoints = new Endpoints(position, nextWPSubtile);
-        Point2I result = bfsNextSubtile.get(endpoints);
-        if (result == null) {
-            bfs(position, nextWPSubtile);
-            result = bfsNextSubtile.get(endpoints);
-        }
-        return result;
-    }
-
-    private void drawSubtileGrid() {
-        setColor(new Color(240, 240, 240));
-        for (int i = 0; i < world.getWidth(); ++i) {
-            for (int j = 0; j < world.getWidth(); ++j) {
-                if (world.getTilesXY()[i][j] != TileType.EMPTY) {
-                    double minX = i * game.getTrackTileSize();
-                    double maxX = (i + 1) * game.getTrackTileSize();
-                    double minY = j * game.getTrackTileSize();
-                    double maxY = (j + 1) * game.getTrackTileSize();
-                    for (double x = minX; x < maxX; x += getSubtileSize()) {
-                        drawLine(x, minY, x, maxY);
-                    }
-                    for (double y = minY; y < maxY; y += getSubtileSize()) {
-                        drawLine(minX, y, maxX, y);
-                    }
-                }
-            }
-        }
-    }
-
-    private int toSubtileCoordinate(double coordinate) {
-        return (int) (coordinate / getSubtileSize());
-    }
-
-    private double getSubtileSize() {
-        return game.getTrackTileSize() / SUBTILE_COUNT;
-    }
-
-    private void updateFields(Graphics graphics, World world, Game game, int canvasWidth, int canvasHeight,
-                              double left, double top, double width, double height) {
-        this.graphics = graphics;
-        this.world = world;
-        this.game = game;
-
-        this.canvasWidth = canvasWidth;
-        this.canvasHeight = canvasHeight;
-
-        this.left = left;
-        this.top = top;
-        this.width = width;
-        this.height = height;
-    }
-
-    private void setNextWP(int x, int y) {
-        nextWP.setX(x);
-        nextWP.setX(y);
-        nextWPSubtile = new Point2I(x * SUBTILE_COUNT + SUBTILE_COUNT / 2,
-                                    y * SUBTILE_COUNT + SUBTILE_COUNT / 2);
-    }
-
     private static final Point2I[] DXY = {
             new Point2I(0, -1),
             new Point2I(1, -1),
@@ -361,230 +452,123 @@ public final class LocalTestRendererListener {
         } while (!vertex.equals(start));
     }
 
-    private void setColor(Color c) {
-        graphics.setColor(c);
+    private Point2I getNextSubtile(Point2I position) {
+        Endpoints endpoints = new Endpoints(position, nextWPSubtile);
+        Point2I result = bfsNextSubtile.get(endpoints);
+        if (result == null) {
+            bfs(position, nextWPSubtile);
+            result = bfsNextSubtile.get(endpoints);
+        }
+        return result;
+    }
+}
+
+class Point2I {
+    public final int x;
+    public final int y;
+
+    public Point2I(int x, int y) {
+        this.x = x;
+        this.y = y;
     }
 
-    private void drawString(String text, int fontSize, double x1, double y1) {
-        Point2I stringBegin = toCanvasPosition(x1, y1);
-
-        graphics.setFont(new Font("Serif", Font.PLAIN, fontSize));
-        graphics.drawString(text, stringBegin.getX(), stringBegin.getY());
+    public Point2I(double x, double y) {
+        this.x = toInt(round(x));
+        this.y = toInt(round(y));
     }
 
-    private void drawLine(double x1, double y1, double x2, double y2) {
-        Point2I lineBegin = toCanvasPosition(x1, y1);
-        Point2I lineEnd = toCanvasPosition(x2, y2);
-
-        graphics.drawLine(lineBegin.getX(), lineBegin.getY(), lineEnd.getX(), lineEnd.getY());
+    private static int toInt(double value) {
+        @SuppressWarnings("NumericCastThatLosesPrecision") int intValue = (int) value;
+        if (abs((double) intValue - value) < 1.0D) {
+            return intValue;
+        }
+        throw new IllegalArgumentException("Can't convert double " + value + " to int.");
     }
 
-    private void fillSubtile(Point2I p) {
-        fillSubtile(p.getX(), p.getY());
+    public int getX() {
+        return x;
     }
 
-    private void fillSubtile(int x, int y) {
-        fillRect(x * getSubtileSize(), y * getSubtileSize(), getSubtileSize(), getSubtileSize());
+    public int getY() {
+        return y;
     }
 
-    private void fillCircle(double centerX, double centerY, double radius) {
-        Point2I topLeft = toCanvasPosition(centerX - radius, centerY - radius);
-        Point2I size = toCanvasOffset(2.0D * radius, 2.0D * radius);
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
 
-        graphics.fillOval(topLeft.getX(), topLeft.getY(), size.getX(), size.getY());
+        Point2I point2I = (Point2I) o;
+
+        if (x != point2I.x) return false;
+        if (y != point2I.y) return false;
+
+        return true;
     }
 
-    private void drawCircle(double centerX, double centerY, double radius) {
-        Point2I topLeft = toCanvasPosition(centerX - radius, centerY - radius);
-        Point2I size = toCanvasOffset(2.0D * radius, 2.0D * radius);
+    @Override
+    public int hashCode() {
+        int result = x;
+        result = 31 * result + y;
+        return result;
+    }
+}
 
-        graphics.drawOval(topLeft.getX(), topLeft.getY(), size.getX(), size.getY());
+class Endpoints {
+    public final Point2I start;
+    public final Point2I end;
+
+    public Endpoints(Point2I start, Point2I end) {
+        this.start = start;
+        this.end = end;
     }
 
-    private void fillArc(double centerX, double centerY, double radius, int startAngle, int arcAngle) {
-        Point2I topLeft = toCanvasPosition(centerX - radius, centerY - radius);
-        Point2I size = toCanvasOffset(2.0D * radius, 2.0D * radius);
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
 
-        graphics.fillArc(topLeft.getX(), topLeft.getY(), size.getX(), size.getY(), startAngle, arcAngle);
+        Endpoints endpoints = (Endpoints) o;
+
+        if (!start.equals(endpoints.start)) return false;
+        if (!end.equals(endpoints.end)) return false;
+
+        return true;
     }
 
-    private void drawArc(double centerX, double centerY, double radius, int startAngle, int arcAngle) {
-        Point2I topLeft = toCanvasPosition(centerX - radius, centerY - radius);
-        Point2I size = toCanvasOffset(2.0D * radius, 2.0D * radius);
+    @Override
+    public int hashCode() {
+        int result = start.hashCode();
+        result = 31 * result + end.hashCode();
+        return result;
+    }
+}
 
-        graphics.drawArc(topLeft.getX(), topLeft.getY(), size.getX(), size.getY(), startAngle, arcAngle);
+class Point2D {
+    private double x;
+    private double y;
+
+    private Point2D(double x, double y) {
+        this.x = x;
+        this.y = y;
     }
 
-    private void fillRect(double left, double top, double width, double height) {
-        Point2I topLeft = toCanvasPosition(left, top);
-        Point2I size = toCanvasOffset(width, height);
-
-        graphics.fillRect(topLeft.getX(), topLeft.getY(), size.getX(), size.getY());
+    private Point2D() {
     }
 
-    private void drawRect(double left, double top, double width, double height) {
-        Point2I topLeft = toCanvasPosition(left, top);
-        Point2I size = toCanvasOffset(width, height);
-
-        graphics.drawRect(topLeft.getX(), topLeft.getY(), size.getX(), size.getY());
+    public double getX() {
+        return x;
     }
 
-    private void drawPolygon(Point2D... points) {
-        int pointCount = points.length;
-
-        for (int pointIndex = 1; pointIndex < pointCount; ++pointIndex) {
-            Point2D pointA = points[pointIndex];
-            Point2D pointB = points[pointIndex - 1];
-            drawLine(pointA.getX(), pointA.getY(), pointB.getX(), pointB.getY());
-        }
-
-        Point2D pointA = points[0];
-        Point2D pointB = points[pointCount - 1];
-        drawLine(pointA.getX(), pointA.getY(), pointB.getX(), pointB.getY());
+    public void setX(double x) {
+        this.x = x;
     }
 
-    private Point2I toCanvasOffset(double x, double y) {
-        return new Point2I(x * canvasWidth / width, y * canvasHeight / height);
+    public double getY() {
+        return y;
     }
 
-    private Point2I toCanvasPosition(double x, double y) {
-        return new Point2I((x - left) * canvasWidth / width, (y - top) * canvasHeight / height);
-    }
-
-    private static final class Point2I {
-        private int x;
-        private int y;
-
-        private Point2I(double x, double y) {
-            this.x = toInt(round(x));
-            this.y = toInt(round(y));
-        }
-
-        private Point2I(int x, int y) {
-            this.x = x;
-            this.y = y;
-        }
-
-        private Point2I() {
-        }
-
-        public int getX() {
-            return x;
-        }
-
-        public void setX(int x) {
-            this.x = x;
-        }
-
-        public int getY() {
-            return y;
-        }
-
-        public void setY(int y) {
-            this.y = y;
-        }
-
-        private static int toInt(double value) {
-            @SuppressWarnings("NumericCastThatLosesPrecision") int intValue = (int) value;
-            if (abs((double) intValue - value) < 1.0D) {
-                return intValue;
-            }
-            throw new IllegalArgumentException("Can't convert double " + value + " to int.");
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-
-            Point2I point2I = (Point2I) o;
-
-            if (x != point2I.x) return false;
-            if (y != point2I.y) return false;
-
-            return true;
-        }
-
-        @Override
-        public int hashCode() {
-            int result = x;
-            result = 31 * result + y;
-            return result;
-        }
-    }
-
-    private static final class Point2D {
-        private double x;
-        private double y;
-
-        private Point2D(double x, double y) {
-            this.x = x;
-            this.y = y;
-        }
-
-        private Point2D() {
-        }
-
-        public double getX() {
-            return x;
-        }
-
-        public void setX(double x) {
-            this.x = x;
-        }
-
-        public double getY() {
-            return y;
-        }
-
-        public void setY(double y) {
-            this.y = y;
-        }
-    }
-
-    private static final class Endpoints {
-        private Point2I start;
-        private Point2I end;
-
-        public Endpoints(Point2I start, Point2I end) {
-            this.start = start;
-            this.end = end;
-        }
-
-        public Point2I getEnd() {
-            return end;
-        }
-
-        public void setEnd(Point2I end) {
-            this.end = end;
-        }
-
-        public Point2I getStart() {
-            return start;
-        }
-
-        public void setStart(Point2I start) {
-            this.start = start;
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-
-            Endpoints endpoints = (Endpoints) o;
-
-            if (!start.equals(endpoints.start)) return false;
-            if (!end.equals(endpoints.end)) return false;
-
-            return true;
-        }
-
-        @Override
-        public int hashCode() {
-            int result = start.hashCode();
-            result = 31 * result + end.hashCode();
-            return result;
-        }
+    public void setY(double y) {
+        this.y = y;
     }
 }
