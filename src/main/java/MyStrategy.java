@@ -8,10 +8,6 @@ public final class MyStrategy implements Strategy {
     public void move(Car self, World world, Game game, Move move) {
         updateFields(self, world, game);
 
-        if (world.getTick() < 220) {
-            return;
-        }
-
         Point2I nextSubtile = getNextSubtile(toSubtilePoint(self));
         nextSubtile = getNextSubtile(nextSubtile);
         nextSubtile = getNextSubtile(nextSubtile);

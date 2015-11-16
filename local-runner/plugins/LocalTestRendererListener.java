@@ -35,7 +35,7 @@ public final class LocalTestRendererListener {
         setColor(new Color(75, 255, 63));
         fillRect(nextWP.x * trackTileSize + 100.0D, nextWP.y * trackTileSize + 100.0D, trackTileSize - 200.0D, trackTileSize - 200.0D);
 
-        drawSubtileGrid();
+        //drawSubtileGrid();
 
         int nextWPId = 1;
         for (int[] waypoint : world.getWaypoints()) {
@@ -76,21 +76,8 @@ public final class LocalTestRendererListener {
             nextWPId = nextWPId + 1;
         }
 
-        int subtileSum = 0;
-        setColor(new Color(240, 240, 240));
-        for (int i = 0; i < world.getWidth(); ++i) {
-            for (int j = 0; j < world.getWidth(); ++j) {
-                if (world.getTilesXY()[i][j] != TileType.EMPTY) {
-                    subtileSum += SUBTILE_COUNT * SUBTILE_COUNT;
-                }
-            }
-        }
-        setColor(Color.BLACK);
-        drawString("" + subtileSum, FONT_SIZE_BIG, game.getTrackTileSize(), game.getTrackTileSize());
-
-        // fillWallSubtiles();
-
-        renderBfs();
+        //countSubtiles();
+        //renderBfs();
 
         setColor(Color.BLACK);
     }
@@ -99,7 +86,7 @@ public final class LocalTestRendererListener {
                                double left, double top, double width, double height) {
         updateFields(graphics, world, game, canvasWidth, canvasHeight, left, top, width, height);
 
-        drawTrajectory();
+        //drawTrajectory();
 
         double speedModule = hypot(self.getSpeedX(), self.getSpeedY());
         setColor(Color.BLACK);
@@ -158,24 +145,30 @@ public final class LocalTestRendererListener {
         setNextWP(self.getNextWaypointX(), self.getNextWaypointY());
     }
 
+    private void countSubtiles() {
+        int subtileSum = 0;
+        setColor(new Color(240, 240, 240));
+        for (int i = 0; i < world.getWidth(); ++i) {
+            for (int j = 0; j < world.getWidth(); ++j) {
+                if (world.getTilesXY()[i][j] != TileType.EMPTY) {
+                    subtileSum += SUBTILE_COUNT * SUBTILE_COUNT;
+                }
+            }
+        }
+        setColor(Color.BLACK);
+        drawString("" + subtileSum, FONT_SIZE_BIG, game.getTrackTileSize(), game.getTrackTileSize());
+    }
+
     private LinkedList<Point2I> realTrajectory = new LinkedList<Point2I>();
     private LinkedList<Point2I> predictedTrajectory = new LinkedList<Point2I>();
 
     private void drawTrajectory() {
         double TIME = 50;
 
-        double speedModule = hypot(self.getSpeedX(), self.getSpeedY());
-        // drawLine(self.getX(), self.getY(), self.getX() + self.getSpeedX() * TIME, self.getY() + self.getSpeedY() * TIME);
-
         if (world.getTick() % TIME == 0) {
             realTrajectory.add(new Point2I(self.getX(), self.getY()));
             predictedTrajectory.add(new Point2I(self.getX() + self.getSpeedX() * TIME, self.getY() + self.getSpeedY() * TIME));
         }
-
-        Vector2D speed = new Vector2D(self.getSpeedX(), self.getSpeedY());
-        Vector2D speedNormal = speed.getPerp().normalize();
-        // drawVector(self, speedNormal.copy().multiply(game.getTrackTileSize()));
-        // self.getWheelTurn() * game.getCarAngularSpeedFactor()
 
         for (Point2I point : predictedTrajectory) {
             setColor(Color.CYAN);
@@ -192,12 +185,11 @@ public final class LocalTestRendererListener {
         int subtileI = 0;
         do {
             if (subtileI == 2) {
-                setColor(Color.GREEN);
+                setColor(Color.PINK);
+                fillSubtile(subtile);
             }
-            else {
-                setColor(Color.RED);
-            }
-            fillSubtile(subtile);
+            setColor(Color.RED);
+            drawSubtile(subtile);
             subtile = getNextSubtile(subtile);
             ++subtileI;
         } while (!subtile.equals(nextWPSubtile));
