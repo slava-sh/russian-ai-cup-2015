@@ -242,6 +242,7 @@ public final class MyStrategy implements Strategy {
             dijkstra(position, nextWPSubtile);
             result = dijkstraNextSubtile.get(endpoints);
         }
+        System.out.println("next for " + position + " is " + result);
         return result;
     }
 }

@@ -77,7 +77,7 @@ public final class LocalTestRendererListener {
         }
 
         //countSubtiles();
-        //renderBfs();
+        renderBfs();
 
         setColor(Color.BLACK);
     }
