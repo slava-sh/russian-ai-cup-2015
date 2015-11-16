@@ -190,7 +190,7 @@ public final class LocalTestRendererListener {
     private void renderBfs() {
         Point2I subtile = new Point2I(toSubtileCoordinate(self.getX()), toSubtileCoordinate(self.getY()));
         int subtileI = 0;
-        while (!subtile.equals(nextWPSubtile)) {
+        do {
             if (subtileI == 2) {
                 setColor(Color.GREEN);
             }
@@ -200,7 +200,7 @@ public final class LocalTestRendererListener {
             fillSubtile(subtile);
             subtile = getNextSubtile(subtile);
             ++subtileI;
-        }
+        } while (!subtile.equals(nextWPSubtile));
     }
 
     private void fillWallSubtiles() {
@@ -344,6 +344,28 @@ public final class LocalTestRendererListener {
         nextWP = new Point2I(x, y);
         nextWPSubtile = new Point2I(x * SUBTILE_COUNT + SUBTILE_COUNT / 2,
                 y * SUBTILE_COUNT + SUBTILE_COUNT / 2);
+
+        int[] afterNextWPArray = world.getWaypoints()[(self.getNextWaypointIndex() + 1) % world.getWaypoints().length];
+        Point2I afterNextWPSubtile = new Point2I(afterNextWPArray[0] * SUBTILE_COUNT + SUBTILE_COUNT / 2,
+                afterNextWPArray[1] * SUBTILE_COUNT + SUBTILE_COUNT / 2);
+
+        int dist = manhattanDistance(nextWPSubtile, afterNextWPSubtile);
+        for (int dx = 0; dx < SUBTILE_COUNT; ++dx) {
+            for (int dy = 0; dy < SUBTILE_COUNT; ++dy) {
+                Point2I option = new Point2I(x * SUBTILE_COUNT + dx, y * SUBTILE_COUNT + dy);
+                int optionDist = manhattanDistance(option, afterNextWPSubtile);
+                if (subtilesXY[option.x][option.y] != SubtileType.WALL) {
+                    if (optionDist < dist) {
+                        nextWPSubtile = option;
+                        dist = optionDist;
+                    }
+                }
+            }
+        }
+    }
+
+    private int manhattanDistance(Point2I a, Point2I b) {
+        return abs(a.x - b.x) + abs(a.y - b.y);
     }
 
     enum SubtileType {WALL, ROAD};
