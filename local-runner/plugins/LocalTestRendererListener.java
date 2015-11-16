@@ -87,24 +87,9 @@ public final class LocalTestRendererListener {
         setColor(Color.BLACK);
         drawString("" + subtileSum, FONT_SIZE_BIG, game.getTrackTileSize(), game.getTrackTileSize());
 
-        for (int x = 0; x < subtilesXY.length; ++x) {
-            for (int y = 0; y < subtilesXY[x].length; ++y) {
-                if (0 <= x && x < subtilesXY.length
-                        && 0 <= y && y < subtilesXY[x].length) {
-                    if (subtilesXY[x][y] == SubtileType.WALL) {
-                        setColor(Color.PINK);
-                        fillSubtile(x, y);
-                    }
-                }
-            }
-        }
+        fillWallSubtiles();
 
-        Point2I subtile = new Point2I(toSubtileCoordinate(self.getX()), toSubtileCoordinate(self.getY()));
-        while (!subtile.equals(nextWPSubtile)) {
-            setColor(Color.RED);
-            drawSubtile(subtile);
-            subtile = getNextSubtile(subtile);
-        }
+        renderBfs();
 
         setColor(Color.BLACK);
     }
@@ -168,6 +153,36 @@ public final class LocalTestRendererListener {
         }
 
         setNextWP(self.getNextWaypointX(), self.getNextWaypointY());
+    }
+
+    private void renderBfs() {
+        Point2I subtile = new Point2I(toSubtileCoordinate(self.getX()), toSubtileCoordinate(self.getY()));
+        int subtileI = 0;
+        while (!subtile.equals(nextWPSubtile)) {
+            if (subtileI == 1) {
+                setColor(Color.GREEN);
+            }
+            else {
+                setColor(Color.RED);
+            }
+            fillSubtile(subtile);
+            subtile = getNextSubtile(subtile);
+            ++subtileI;
+        }
+    }
+
+    private void fillWallSubtiles() {
+        for (int x = 0; x < subtilesXY.length; ++x) {
+            for (int y = 0; y < subtilesXY[x].length; ++y) {
+                if (0 <= x && x < subtilesXY.length
+                        && 0 <= y && y < subtilesXY[x].length) {
+                    if (subtilesXY[x][y] == SubtileType.WALL) {
+                        setColor(Color.PINK);
+                        fillSubtile(x, y);
+                    }
+                }
+            }
+        }
     }
 
     private void drawSubtileGrid() {
@@ -326,14 +341,14 @@ public final class LocalTestRendererListener {
 
     private void createSubtiles() {
         subtilesXY = new SubtileType[world.getWidth() * SUBTILE_COUNT][world.getHeight() * SUBTILE_COUNT];
-        for (int tile_x = 0; tile_x < world.getWidth(); ++tile_x) {
+        for (int tileX = 0; tileX < world.getWidth(); ++tileX) {
             for (int i = 0; i < SUBTILE_COUNT; ++i) {
-                int subtile_x = tile_x * SUBTILE_COUNT + i;
-                for (int tile_y = 0; tile_y < world.getWidth(); ++tile_y) {
+                int subtileX = tileX * SUBTILE_COUNT + i;
+                for (int tileY = 0; tileY < world.getWidth(); ++tileY) {
                     for (int j = 0; j < SUBTILE_COUNT; ++j) {
-                        int subtile_y = tile_y * SUBTILE_COUNT + j;
+                        int subtileY = tileY * SUBTILE_COUNT + j;
                         SubtileType subtileType = SubtileType.ROAD;
-                        switch (world.getTilesXY()[tile_x][tile_y]) {
+                        switch (world.getTilesXY()[tileX][tileY]) {
                             case LEFT_TOP_CORNER:
                                 if (i == SUBTILE_LEFT || j == SUBTILE_TOP || (i == SUBTILE_RIGHT && j == SUBTILE_BOTTOM)) {
                                     subtileType = SubtileType.WALL;
@@ -394,7 +409,7 @@ public final class LocalTestRendererListener {
                                 break;
                             default:
                         }
-                        subtilesXY[subtile_x][subtile_y] = subtileType;
+                        subtilesXY[subtileX][subtileY] = subtileType;
                     }
                 }
             }
