@@ -295,27 +295,11 @@ class Point2I {
 }
 
 class Endpoints {
-    private Point2I start;
-    private Point2I end;
+    public final Point2I start;
+    public final Point2I end;
 
     public Endpoints(Point2I start, Point2I end) {
         this.start = start;
-        this.end = end;
-    }
-
-    public Point2I getStart() {
-        return start;
-    }
-
-    public void setStart(Point2I start) {
-        this.start = start;
-    }
-
-    public Point2I getEnd() {
-        return end;
-    }
-
-    public void setEnd(Point2I end) {
         this.end = end;
     }
 
