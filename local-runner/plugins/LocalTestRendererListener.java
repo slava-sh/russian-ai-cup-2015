@@ -4,7 +4,9 @@ import java.awt.Graphics;
 import java.awt.Color;
 import java.awt.Font;
 
+import java.lang.Override;
 import java.util.*;
+import java.util.HashMap;
 
 import static java.lang.StrictMath.*;
 
@@ -27,9 +29,7 @@ public final class LocalTestRendererListener {
     private static int currentWPId = -1;
     private static long myId = -1;
 
-    enum SubtileType {WALL, ROAD}
-
-    ;
+    enum SubtileType {WALL, ROAD};
 
     private static final int SUBTILE_COUNT = 5;
     private static final int SUBTILE_LEFT;
@@ -45,6 +45,9 @@ public final class LocalTestRendererListener {
     }
 
     private SubtileType[][] subtilesXY;
+    private Point2I nextWP = new Point2I();
+    private Point2I nextWPSubtile = new Point2I();
+    private int nextWPId = 1;
 
     public void beforeDrawScene(Graphics graphics, World world, Game game, int canvasWidth, int canvasHeight,
                                 double left, double top, double width, double height) {
@@ -55,8 +58,6 @@ public final class LocalTestRendererListener {
         }
 
         double trackTileSize = game.getTrackTileSize();
-        Point2I nextWP = new Point2I();
-        int nextWPId = 1;
         double nOffset = 60.0D;
 
         if (myId == -1) {
@@ -77,8 +78,7 @@ public final class LocalTestRendererListener {
 
         for (Car car : world.getCars()) {
             if (car.getPlayerId() == myId) {
-                nextWP.setX(car.getNextWaypointX());
-                nextWP.setY(car.getNextWaypointY());
+                setNextWP(car.getNextWaypointX(), car.getNextWaypointY());
                 double x = nextWP.getX() * trackTileSize + 100.0D;
                 double y = nextWP.getY() * trackTileSize + 100.0D;
 
@@ -145,7 +145,7 @@ public final class LocalTestRendererListener {
                         && 0 <= y && y < subtilesXY[x].length) {
                     if (subtilesXY[x][y] == SubtileType.WALL) {
                         setColor(Color.PINK);
-                        fillRect(x * getSubtileSize(), y * getSubtileSize(), getSubtileSize(), getSubtileSize());
+                        fillSubtile(x, y);
                     }
                 }
             }
@@ -153,14 +153,11 @@ public final class LocalTestRendererListener {
 
         for (Car car : world.getCars()) {
             if (car.getPlayerId() == myId) {
-                Point2I carSubtile = new Point2I(toSubtileCoordinate(car.getX()), toSubtileCoordinate(car.getY()));
-                Point2I target = new Point2I(nextWP.x * SUBTILE_COUNT + SUBTILE_COUNT / 2,
-                        nextWP.y * SUBTILE_COUNT + SUBTILE_COUNT / 2);
-                List<Point2I> path = bfs(carSubtile, target);
-                setColor(Color.BLACK);
-                for (Point2I subtile : path) {
+                Point2I subtile = new Point2I(toSubtileCoordinate(car.getX()), toSubtileCoordinate(car.getY()));
+                while (!subtile.equals(nextWPSubtile)) {
                     setColor(Color.RED);
-                    fillRect(subtile.x * getSubtileSize(), subtile.y * getSubtileSize(), getSubtileSize(), getSubtileSize());
+                    fillSubtile(subtile);
+                    subtile = getNextSubtile(subtile);
                 }
             }
         }
@@ -262,6 +259,16 @@ public final class LocalTestRendererListener {
         }
     }
 
+    private Point2I getNextSubtile(Point2I position) {
+        Endpoints endpoints = new Endpoints(position, nextWPSubtile);
+        Point2I result = bfsNextSubtile.get(endpoints);
+        if (result == null) {
+            bfs(position, nextWPSubtile);
+            result = bfsNextSubtile.get(endpoints);
+        }
+        return result;
+    }
+
     private void drawSubtileGrid() {
         setColor(new Color(240, 240, 240));
         for (int i = 0; i < world.getWidth(); ++i) {
@@ -305,6 +312,13 @@ public final class LocalTestRendererListener {
         this.height = height;
     }
 
+    private void setNextWP(int x, int y) {
+        nextWP.setX(x);
+        nextWP.setX(y);
+        nextWPSubtile = new Point2I(x * SUBTILE_COUNT + SUBTILE_COUNT / 2,
+                                    y * SUBTILE_COUNT + SUBTILE_COUNT / 2);
+    }
+
     private static final Point2I[] DXY = {
             new Point2I(0, -1),
             new Point2I(1, -1),
@@ -316,7 +330,9 @@ public final class LocalTestRendererListener {
             new Point2I(-1, -1),
     };
 
-    private List<Point2I> bfs(Point2I start, Point2I end) {
+    private Map<Endpoints, Point2I> bfsNextSubtile = new HashMap<Endpoints, Point2I>();
+
+    private void bfs(Point2I start, Point2I end) {
         Queue<Point2I> queue = new LinkedList<Point2I>();
         Map<Point2I, Point2I> prev = new HashMap<Point2I, Point2I>();
         queue.add(start);
@@ -337,14 +353,12 @@ public final class LocalTestRendererListener {
             }
         }
 
-        List<Point2I> path = new LinkedList<Point2I>();
         Point2I vertex = end;
         do {
-            path.add(vertex);
-            vertex = prev.get(vertex);
+            Point2I prevVertex = prev.get(vertex);
+            bfsNextSubtile.put(new Endpoints(prevVertex, end), vertex);
+            vertex = prevVertex;
         } while (!vertex.equals(start));
-        Collections.reverse(path);
-        return path;
     }
 
     private void setColor(Color c) {
@@ -363,6 +377,14 @@ public final class LocalTestRendererListener {
         Point2I lineEnd = toCanvasPosition(x2, y2);
 
         graphics.drawLine(lineBegin.getX(), lineBegin.getY(), lineEnd.getX(), lineEnd.getY());
+    }
+
+    private void fillSubtile(Point2I p) {
+        fillSubtile(p.getX(), p.getY());
+    }
+
+    private void fillSubtile(int x, int y) {
+        fillRect(x * getSubtileSize(), y * getSubtileSize(), getSubtileSize(), getSubtileSize());
     }
 
     private void fillCircle(double centerX, double centerY, double radius) {
@@ -517,6 +539,52 @@ public final class LocalTestRendererListener {
 
         public void setY(double y) {
             this.y = y;
+        }
+    }
+
+    private static final class Endpoints {
+        private Point2I start;
+        private Point2I end;
+
+        public Endpoints(Point2I start, Point2I end) {
+            this.start = start;
+            this.end = end;
+        }
+
+        public Point2I getEnd() {
+            return end;
+        }
+
+        public void setEnd(Point2I end) {
+            this.end = end;
+        }
+
+        public Point2I getStart() {
+            return start;
+        }
+
+        public void setStart(Point2I start) {
+            this.start = start;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            Endpoints endpoints = (Endpoints) o;
+
+            if (!start.equals(endpoints.start)) return false;
+            if (!end.equals(endpoints.end)) return false;
+
+            return true;
+        }
+
+        @Override
+        public int hashCode() {
+            int result = start.hashCode();
+            result = 31 * result + end.hashCode();
+            return result;
         }
     }
 }
