@@ -23,8 +23,6 @@ public final class LocalTestRendererListener {
                                 double left, double top, double width, double height) {
         updateFields(graphics, world, game, canvasWidth, canvasHeight, left, top, width, height);
 
-        renderTileDijkstra();
-
         double trackTileSize = game.getTrackTileSize();
         double nOffset = 60.0D;
 
@@ -81,7 +79,9 @@ public final class LocalTestRendererListener {
         }
 
         //countSubtiles();
-        renderBfs();
+
+        renderTileDijkstra();
+        renderSubtileDijkstra();
 
         setColor(Color.BLACK);
     }
@@ -136,18 +136,18 @@ public final class LocalTestRendererListener {
 
     private void renderTileDijkstra() {
         setColor(Color.BLUE);
-        fillTile(toTilePoint(self));
+        drawTile(toTilePoint(self));
         int tileI = 0;
         for (Point2I tile : getNextTiles(3)) {
             ++tileI;
-            setColor(Color.PINK);
-            fillTile(tile);
+            setColor(Color.GREEN);
+            drawTile(tile);
             setColor(Color.BLACK);
             drawString("t" + tileI, FONT_SIZE_BIG, tile.getX() * game.getTrackTileSize() + 0.5 * game.getTrackTileSize(), tile.getY() * game.getTrackTileSize() + 0.5 * game.getTrackTileSize());
         }
     }
 
-    private void renderBfs() {
+    private void renderSubtileDijkstra() {
         int subtileI = 0;
         for (Point2I subtile : getNextSubtiles()) {
             ++subtileI;
@@ -156,7 +156,7 @@ public final class LocalTestRendererListener {
                 fillSubtile(subtile);
             }
             setColor(Color.RED);
-            drawSubtile(subtile);
+            fillSubtile(subtile);
         }
     }
 
@@ -180,21 +180,31 @@ public final class LocalTestRendererListener {
     }
 
     private List<Point2I> getNextSubtiles() {
-        Point2I target = getNextWPSubtile();
-        Point2I subtile = toSubtilePoint(self);
-        List<Point2I> result = new LinkedList<Point2I>();
-        while (true) {
-            if (subtileToTile(target).equals(subtileToTile(subtile))) {
-                target = getNextWPSubtile(1);
+        List<Point2I> tiles = getNextTiles(3);
+        tiles.add(0, toTilePoint(self));
+
+        SubtileType[][] subtiles = new SubtileType[world.getWidth() * SUBTILE_COUNT][world.getHeight() * SUBTILE_COUNT];
+        for (int x = 0; x < subtiles.length; ++x) {
+            for (int y = 0; y < subtiles[x].length; ++y) {
+                subtiles[x][y] = SubtileType.WALL;
             }
-            Point2I prevSubtile = subtile;
-            subtile = getNextSubtile(subtile, target);
-            if (subtile.equals(prevSubtile)) {
-                break;
-            }
-            result.add(subtile);
         }
-        return result;
+        for (Point2I tile : tiles) {
+            for (int dx = 0; dx < SUBTILE_COUNT; ++dx) {
+                for (int dy = 0; dy < SUBTILE_COUNT; ++dy) {
+                    subtiles[tile.x * SUBTILE_COUNT + dx][tile.y * SUBTILE_COUNT + dy] = SubtileType.ROAD;
+                }
+            }
+        }
+
+        Point2I start = toSubtilePoint(self);
+        Point2I end = centerSubtile(tiles.get(tiles.size() - 1));
+        return subtileDijkstra(start, end, subtiles);
+    }
+
+    private Point2I centerSubtile(Point2I tile) {
+        return new Point2I(tile.getX() * SUBTILE_COUNT + SUBTILE_COUNT / 2,
+                           tile.getY() * SUBTILE_COUNT + SUBTILE_COUNT / 2);
     }
 
     private List<Point2I> getNextTiles(int count) {
@@ -211,20 +221,6 @@ public final class LocalTestRendererListener {
             tile = target;
         }
         return result;
-    }
-
-    private void fillWallSubtiles() {
-        for (int x = 0; x < subtilesXY.length; ++x) {
-            for (int y = 0; y < subtilesXY[x].length; ++y) {
-                if (0 <= x && x < subtilesXY.length
-                        && 0 <= y && y < subtilesXY[x].length) {
-                    if (subtilesXY[x][y] == SubtileType.WALL) {
-                        setColor(Color.PINK);
-                        fillSubtile(x, y);
-                    }
-                }
-            }
-        }
     }
 
     private void drawSubtileGrid() {
@@ -406,10 +402,6 @@ public final class LocalTestRendererListener {
             }
         }
 
-        if (subtilesXY == null) {
-            createSubtiles();
-        }
-
         setNextWP(self.getNextWaypointX(), self.getNextWaypointY());
     }
 
@@ -461,89 +453,6 @@ public final class LocalTestRendererListener {
         return game.getTrackTileSize() / SUBTILE_COUNT;
     }
 
-    private SubtileType[][] subtilesXY;
-    private boolean needRebuildSubtiles = false;
-
-    private void createSubtiles() {
-        subtilesXY = new SubtileType[world.getWidth() * SUBTILE_COUNT][world.getHeight() * SUBTILE_COUNT];
-        for (int tileX = 0; tileX < world.getWidth(); ++tileX) {
-            for (int i = 0; i < SUBTILE_COUNT; ++i) {
-                int subtileX = tileX * SUBTILE_COUNT + i;
-                for (int tileY = 0; tileY < world.getWidth(); ++tileY) {
-                    for (int j = 0; j < SUBTILE_COUNT; ++j) {
-                        int subtileY = tileY * SUBTILE_COUNT + j;
-                        SubtileType subtileType = SubtileType.ROAD;
-                        switch (world.getTilesXY()[tileX][tileY]) {
-                            case LEFT_TOP_CORNER:
-                                if (i == SUBTILE_LEFT || j == SUBTILE_TOP || (i == SUBTILE_RIGHT && j == SUBTILE_BOTTOM)) {
-                                    subtileType = SubtileType.WALL;
-                                }
-                                break;
-                            case RIGHT_TOP_CORNER:
-                                if (i == SUBTILE_RIGHT || j == SUBTILE_TOP || (i == SUBTILE_LEFT && j == SUBTILE_BOTTOM)) {
-                                    subtileType = SubtileType.WALL;
-                                }
-                                break;
-                            case LEFT_BOTTOM_CORNER:
-                                if (i == SUBTILE_LEFT || j == SUBTILE_BOTTOM || (i == SUBTILE_RIGHT && j == SUBTILE_TOP)) {
-                                    subtileType = SubtileType.WALL;
-                                }
-                                break;
-                            case RIGHT_BOTTOM_CORNER:
-                                if (i == SUBTILE_RIGHT || j == SUBTILE_BOTTOM || (i == SUBTILE_LEFT && j == SUBTILE_TOP)) {
-                                    subtileType = SubtileType.WALL;
-                                }
-                                break;
-                            case VERTICAL:
-                                if (i == SUBTILE_LEFT || i == SUBTILE_RIGHT) {
-                                    subtileType = SubtileType.WALL;
-                                }
-                                break;
-                            case HORIZONTAL:
-                                if (j == SUBTILE_TOP || j == SUBTILE_BOTTOM) {
-                                    subtileType = SubtileType.WALL;
-                                }
-                                break;
-                            case CROSSROADS:
-                                if ((i == SUBTILE_LEFT || i == SUBTILE_RIGHT) && (j == SUBTILE_TOP || j == SUBTILE_BOTTOM)) {
-                                    subtileType = SubtileType.WALL;
-                                }
-                                break;
-                            case LEFT_HEADED_T:
-                                if (i == SUBTILE_RIGHT || (i == SUBTILE_LEFT && (j == SUBTILE_TOP || j == SUBTILE_BOTTOM))) {
-                                    subtileType = SubtileType.WALL;
-                                }
-                                break;
-                            case RIGHT_HEADED_T:
-                                if (i == SUBTILE_LEFT || (i == SUBTILE_RIGHT && (j == SUBTILE_TOP || j == SUBTILE_BOTTOM))) {
-                                    subtileType = SubtileType.WALL;
-                                }
-                                break;
-                            case TOP_HEADED_T:
-                                if (j == SUBTILE_BOTTOM || (j == SUBTILE_TOP && (i == SUBTILE_LEFT || i == SUBTILE_RIGHT))) {
-                                    subtileType = SubtileType.WALL;
-                                }
-                                break;
-                            case BOTTOM_HEADED_T:
-                                if (j == SUBTILE_TOP || (j == SUBTILE_BOTTOM && (i == SUBTILE_LEFT || i == SUBTILE_RIGHT))) {
-                                    subtileType = SubtileType.WALL;
-                                }
-                                break;
-                            case EMPTY:
-                                subtileType = SubtileType.WALL;
-                                break;
-                            case UNKNOWN:
-                                needRebuildSubtiles = true;
-                                break;
-                            default:
-                        }
-                        subtilesXY[subtileX][subtileY] = subtileType;
-                    }
-                }
-            }
-        }
-    }
-
     private static final Point2I[] tileDijkstraDXY = {
             new Point2I(0, -1),
             new Point2I(1, 0),
@@ -569,7 +478,7 @@ public final class LocalTestRendererListener {
             if (vertex.equals(end)) {
                 break;
             }
-            for (Point2I dxy : DXY) {
+            for (Point2I dxy : tileDijkstraDXY) {
                 Point2I nextVertex = new Point2I(vertex.x + dxy.x, vertex.y + dxy.y);
                 if (0 <= nextVertex.x && nextVertex.x < tiles.length
                         && 0 <= nextVertex.y && nextVertex.y < tiles[nextVertex.x].length
@@ -596,7 +505,7 @@ public final class LocalTestRendererListener {
         return path;
     }
 
-    private static final Point2I[] DXY = {
+    private static final Point2I[] subtileDijkstraDXY = {
             new Point2I(0, -1),
             new Point2I(1, -1),
             new Point2I(1, 0),
@@ -607,9 +516,7 @@ public final class LocalTestRendererListener {
             new Point2I(-1, -1),
     };
 
-    private Map<Endpoints, Point2I> dijkstraNextSubtile = new HashMap<Endpoints, Point2I>();
-
-    private void dijkstra(Point2I start, Point2I end) {
+    private List<Point2I> subtileDijkstra(Point2I start, Point2I end, SubtileType[][] subtiles) {
         Map<Point2I, Point2I> prev = new HashMap<Point2I, Point2I>();
         Map<Point2I, Double> dist = new HashMap<Point2I, Double>();
         Queue<Point2I> queue = new PriorityQueue<Point2I>(new Comparator<Point2I>() {
@@ -626,11 +533,11 @@ public final class LocalTestRendererListener {
             if (vertex.equals(end)) {
                 break;
             }
-            for (Point2I dxy : DXY) {
+            for (Point2I dxy : subtileDijkstraDXY) {
                 Point2I nextVertex = new Point2I(vertex.x + dxy.x, vertex.y + dxy.y);
-                if (0 <= nextVertex.x && nextVertex.x < subtilesXY.length
-                        && 0 <= nextVertex.y && nextVertex.y < subtilesXY[nextVertex.x].length
-                        && subtilesXY[nextVertex.x][nextVertex.y] != SubtileType.WALL
+                if (0 <= nextVertex.x && nextVertex.x < subtiles.length
+                        && 0 <= nextVertex.y && nextVertex.y < subtiles[nextVertex.x].length
+                        && subtiles[nextVertex.x][nextVertex.y] != SubtileType.WALL
                         && !prev.containsKey(nextVertex)) {
                     Double option = dist.get(vertex) + hypot(nextVertex.x - vertex.x, nextVertex.y - vertex.y);
                     if (option < dist.getOrDefault(nextVertex, Double.POSITIVE_INFINITY)) {
@@ -642,30 +549,18 @@ public final class LocalTestRendererListener {
             }
         }
 
+        List<Point2I> path = new LinkedList<Point2I>();
         Point2I vertex = end;
         do {
-            Point2I prevVertex = prev.get(vertex);
-            dijkstraNextSubtile.put(new Endpoints(prevVertex, end), vertex);
-            vertex = prevVertex;
+            path.add(vertex);
+            vertex = prev.get(vertex);
         } while (!vertex.equals(start));
-    }
-
-    private Point2I getNextSubtile(Point2I position, Point2I target) {
-        Endpoints endpoints = new Endpoints(position, target);
-        Point2I result = dijkstraNextSubtile.get(endpoints);
-        if (result == null) {
-            dijkstra(position, target);
-            result = dijkstraNextSubtile.get(endpoints);
-        }
-        return result;
+        Collections.reverse(path);
+        return path;
     }
 
     private Point2I subtileToTile(Point2I subtile) {
         return new Point2I(subtile.x / SUBTILE_COUNT, subtile.y / SUBTILE_COUNT);
-    }
-
-    private Point2I getNextTile(Point2I position) {
-        return null;
     }
 }
 
