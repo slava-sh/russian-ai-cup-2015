@@ -292,7 +292,7 @@ public final class MyStrategy implements Strategy {
     }
 
     private List<Point2I> getNextSubtiles() {
-        List<Point2I> tiles = getNextTiles(3);
+        List<Point2I> tiles = getNextTiles(4);
         tiles.add(0, toTilePoint(nose));
 
         SubtileType[][] subtiles = new SubtileType[world.getWidth() * SUBTILE_COUNT][world.getHeight() * SUBTILE_COUNT];
@@ -375,11 +375,35 @@ public final class MyStrategy implements Strategy {
         addWalls(tiles.get(0), tiles.get(1), tiles.get(2), subtiles);
         addWalls(tiles.get(1), tiles.get(2), tiles.get(3), subtiles);
 
+        Point2I t0 = tiles.get(0);
+        Point2I t1 = tiles.get(1);
+        Point2I t2 = tiles.get(2);
+        Point2I t3 = tiles.get(3);
+        Point2I t4 = tiles.get(4);
+        if (isStraight(t0, t1) && isStraight(t0, t2)) {
+            if (!isStraight(t0, t3)) {
+                Point2I forward = new Point2I(t1.x - t0.x, t1.y - t0.y);
+                Point2I turn = new Point2I(t3.x - t2.x, t3.y - t2.y);
+                addWall(subtiles, t1, -forward.x, -forward.y);
+                addWall(subtiles, t1, turn.x - forward.x, turn.y - forward.y);
+            }
+            else if (!isStraight(t0, t4)) {
+                Point2I forward = new Point2I(t1.x - t0.x, t1.y - t0.y);
+                Point2I turn = new Point2I(t4.x - t3.x, t4.y - t3.y);
+                addWall(subtiles, t1, -forward.x, -forward.y);
+                addWall(subtiles, t1, turn.x + -forward.x, turn.y + -forward.y);
+            }
+        }
+
         Point2I start = toSubtilePoint(nose);
         Point2I end = centerSubtile(tiles.get(tiles.size() - 1));
         subtiles[start.x][start.y] = SubtileType.ROAD;
         subtiles[end.x][end.y] = SubtileType.ROAD;
         return subtileDijkstra(start, end, subtiles);
+    }
+
+    private boolean isStraight(Point2I a, Point2I b) {
+        return a.x == b.x || a.y == b.y;
     }
 
     private void addWalls(Point2I a, Point2I b, Point2I c, SubtileType[][] subtiles) {
@@ -393,12 +417,6 @@ public final class MyStrategy implements Strategy {
             addWall(subtiles, b, ab.x + bc.x, ab.y + bc.y);
             addWall(subtiles, b, -bc.x, -bc.y);
             addWall(subtiles, b, -bc.x - ab.x, -bc.y - ab.y);
-
-            addWall(subtiles, a, bc.x, bc.y);
-            //addWall(subtiles, a, -ab.x, -ab.y);
-
-            //addWall(subtiles, a, bc.x - ab.x * SUBTILE_COUNT, bc.y - ab.y * SUBTILE_COUNT);
-            //addWall(subtiles, a, ab.x - ab.x * SUBTILE_COUNT, ab.y - ab.y * SUBTILE_COUNT);
         }
     }
 
