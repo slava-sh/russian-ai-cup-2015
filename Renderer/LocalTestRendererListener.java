@@ -537,6 +537,12 @@ public final class LocalTestRendererListener {
         List<Point2I> tiles = getNextTiles(4);
         tiles.add(0, toTilePoint(nose));
 
+        Point2I t0 = tiles.get(0);
+        Point2I t1 = tiles.get(1);
+        Point2I t2 = tiles.get(2);
+        Point2I t3 = tiles.get(3);
+        Point2I t4 = tiles.get(4);
+
         SubtileType[][] subtiles = new SubtileType[world.getWidth() * SUBTILE_COUNT][world.getHeight() * SUBTILE_COUNT];
         for (int x = 0; x < subtiles.length; ++x) {
             for (int y = 0; y < subtiles[x].length; ++y) {
@@ -614,14 +620,9 @@ public final class LocalTestRendererListener {
             }
         }
 
-        addWalls(tiles.get(0), tiles.get(1), tiles.get(2), subtiles);
-        addWalls(tiles.get(1), tiles.get(2), tiles.get(3), subtiles);
+        addWalls(t0, t1, t2, subtiles);
+        addWalls(t1, t2, t3, subtiles);
 
-        Point2I t0 = tiles.get(0);
-        Point2I t1 = tiles.get(1);
-        Point2I t2 = tiles.get(2);
-        Point2I t3 = tiles.get(3);
-        Point2I t4 = tiles.get(4);
         if (isStraight(t0, t1) && isStraight(t0, t2)) {
             if (!isStraight(t0, t3)) {
                 Point2I forward = new Point2I(t1.x - t0.x, t1.y - t0.y);
