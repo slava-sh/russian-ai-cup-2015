@@ -159,7 +159,7 @@ public final class LocalTestRendererListener {
     private void renderSubtileDijkstra() {
         int subtileI = 0;
         for (Point2I subtile : getNextSubtiles()) {
-            if (subtileI == 2) {
+            if (subtileI == CHASE_TILE) {
                 setColor(Color.PINK);
                 fillSubtile(subtile);
             }
@@ -533,6 +533,8 @@ public final class LocalTestRendererListener {
         return result;
     }
 
+    private static final int CHASE_TILE = 2;
+
     private List<Point2I> getNextSubtiles() {
         List<Point2I> tiles = getNextTiles(4);
         tiles.add(0, toTilePoint(nose));
@@ -627,6 +629,7 @@ public final class LocalTestRendererListener {
             if (!isStraight(t0, t3)) {
                 Point2I forward = new Point2I(t1.x - t0.x, t1.y - t0.y);
                 Point2I turn = new Point2I(t3.x - t2.x, t3.y - t2.y);
+
                 addWall(subtiles, t1, -forward.x, -forward.y);
                 addWall(subtiles, t1, turn.x - forward.x, turn.y - forward.y);
             }
@@ -635,8 +638,9 @@ public final class LocalTestRendererListener {
                 fillTile(t1);
                 Point2I forward = new Point2I(t1.x - t0.x, t1.y - t0.y);
                 Point2I turn = new Point2I(t4.x - t3.x, t4.y - t3.y);
+
                 addWall(subtiles, t1, -forward.x, -forward.y);
-                addWall(subtiles, t1, turn.x + -forward.x, turn.y + -forward.y);
+                addWall(subtiles, t1, turn.x - forward.x, turn.y - forward.y);
             }
         }
 

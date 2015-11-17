@@ -20,7 +20,7 @@ public final class MyStrategy implements Strategy {
         updateFields(self, world, game);
 
         List<Point2I> nextSubtiles = getNextSubtiles();
-        Point2I nextSubtile = nextSubtiles.get(2);
+        Point2I nextSubtile = nextSubtiles.get(CHASE_TILE);
         double nextX = (nextSubtile.x + 0.5) * getSubtileSize();
         double nextY = (nextSubtile.y + 0.5) * getSubtileSize();
         double angle = self.getAngleTo(nextX, nextY);
@@ -291,6 +291,8 @@ public final class MyStrategy implements Strategy {
         return result;
     }
 
+    private static final int CHASE_TILE = 2;
+
     private List<Point2I> getNextSubtiles() {
         List<Point2I> tiles = getNextTiles(4);
         tiles.add(0, toTilePoint(nose));
@@ -385,14 +387,16 @@ public final class MyStrategy implements Strategy {
             if (!isStraight(t0, t3)) {
                 Point2I forward = new Point2I(t1.x - t0.x, t1.y - t0.y);
                 Point2I turn = new Point2I(t3.x - t2.x, t3.y - t2.y);
+
                 addWall(subtiles, t1, -forward.x, -forward.y);
                 addWall(subtiles, t1, turn.x - forward.x, turn.y - forward.y);
             }
             else if (!isStraight(t0, t4)) {
                 Point2I forward = new Point2I(t1.x - t0.x, t1.y - t0.y);
                 Point2I turn = new Point2I(t4.x - t3.x, t4.y - t3.y);
+
                 addWall(subtiles, t1, -forward.x, -forward.y);
-                addWall(subtiles, t1, turn.x + -forward.x, turn.y + -forward.y);
+                addWall(subtiles, t1, turn.x - forward.x, turn.y - forward.y);
             }
         }
 
