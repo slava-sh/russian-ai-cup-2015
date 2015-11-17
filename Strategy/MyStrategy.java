@@ -4,16 +4,18 @@ import java.util.*;
 import static java.lang.StrictMath.*;
 
 public final class MyStrategy implements Strategy {
-    private static final double STUCK_SPEED = 10.0;
-    private static final int STUCK_TICKS = 40;
-    private static final int LONG_STUCK_TICKS = 150;
+
+    private static final double BRAKE_SPEED = 10.0;
+    private static final double DAMAGE_EPS = 0.01;
+    private static final double STUCK_SPEED = 5.0;
+    private static final int STUCK_START_TICKS = 150;
+    private static final int STUCK_DURATION = 150;
 
     enum State { START, RUN, STUCK };
 
     private State state = State.START;
     private int stuckTickCount = 0;
     private int stuckStartTick;
-    private Point2I stuckTarget;
 
     @Override
     public void move(Car self, World world, Game game, Move move) {
@@ -31,15 +33,16 @@ public final class MyStrategy implements Strategy {
 
         double speedModule = hypot(self.getSpeedX(), self.getSpeedY());
         if (state == state.RUN) {
-            if (speedModule < STUCK_SPEED && ++stuckTickCount >= STUCK_TICKS){
+            if (speedModule < STUCK_SPEED
+                    && self.getDurability() > DAMAGE_EPS
+                    && ++stuckTickCount >= STUCK_START_TICKS){
                 state = State.STUCK;
                 stuckStartTick = world.getTick();
             }
         }
         else if (state == State.STUCK
                 && (speedModule > STUCK_SPEED
-                || abs(angle) < PI / 5
-                || world.getTick() - stuckStartTick > LONG_STUCK_TICKS)) {
+                || world.getTick() - stuckStartTick > STUCK_DURATION)) {
             state = State.RUN;
             stuckTickCount = 0;
         }
@@ -57,7 +60,7 @@ public final class MyStrategy implements Strategy {
             }
 
             move.setEnginePower(1.0); // 0.5 + max(0, (PI / 4 - abs(angle)) * 3 / 2 / PI));
-            if (speedModule * abs(angle) > 25.0 * PI / 8 && speedModule > STUCK_SPEED) {
+            if (speedModule * abs(angle) > 25.0 * PI / 8 && speedModule > BRAKE_SPEED) {
                 move.setBrake(true);
                 move.setEnginePower(1.0);
             }
