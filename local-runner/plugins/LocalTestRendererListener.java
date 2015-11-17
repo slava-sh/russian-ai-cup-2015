@@ -510,7 +510,70 @@ public final class LocalTestRendererListener {
         for (Point2I tile : tiles) {
             for (int dx = 0; dx < SUBTILE_COUNT; ++dx) {
                 for (int dy = 0; dy < SUBTILE_COUNT; ++dy) {
-                    subtiles[tile.x * SUBTILE_COUNT + dx][tile.y * SUBTILE_COUNT + dy] = SubtileType.ROAD;
+                    SubtileType subtileType = SubtileType.ROAD;
+                    switch (world.getTilesXY()[tile.x][tile.y]) {
+                        case LEFT_TOP_CORNER:
+                            if (dx == SUBTILE_LEFT || dy == SUBTILE_TOP || (dx == SUBTILE_RIGHT && dy == SUBTILE_BOTTOM)) {
+                                subtileType = SubtileType.WALL;
+                            }
+                            break;
+                        case RIGHT_TOP_CORNER:
+                            if (dx == SUBTILE_RIGHT || dy == SUBTILE_TOP || (dx == SUBTILE_LEFT && dy == SUBTILE_BOTTOM)) {
+                                subtileType = SubtileType.WALL;
+                            }
+                            break;
+                        case LEFT_BOTTOM_CORNER:
+                            if (dx == SUBTILE_LEFT || dy == SUBTILE_BOTTOM || (dx == SUBTILE_RIGHT && dy == SUBTILE_TOP)) {
+                                subtileType = SubtileType.WALL;
+                            }
+                            break;
+                        case RIGHT_BOTTOM_CORNER:
+                            if (dx == SUBTILE_RIGHT || dy == SUBTILE_BOTTOM || (dx == SUBTILE_LEFT && dy == SUBTILE_TOP)) {
+                                subtileType = SubtileType.WALL;
+                            }
+                            break;
+                        case VERTICAL:
+                            if (dx == SUBTILE_LEFT || dx == SUBTILE_RIGHT) {
+                                subtileType = SubtileType.WALL;
+                            }
+                            break;
+                        case HORIZONTAL:
+                            if (dy == SUBTILE_TOP || dy == SUBTILE_BOTTOM) {
+                                subtileType = SubtileType.WALL;
+                            }
+                            break;
+                        case CROSSROADS:
+                            if ((dx == SUBTILE_LEFT || dx == SUBTILE_RIGHT) && (dy == SUBTILE_TOP || dy == SUBTILE_BOTTOM)) {
+                                subtileType = SubtileType.WALL;
+                            }
+                            break;
+                        case LEFT_HEADED_T:
+                            if (dx == SUBTILE_RIGHT || (dx == SUBTILE_LEFT && (dy == SUBTILE_TOP || dy == SUBTILE_BOTTOM))) {
+                                subtileType = SubtileType.WALL;
+                            }
+                            break;
+                        case RIGHT_HEADED_T:
+                            if (dx == SUBTILE_LEFT || (dx == SUBTILE_RIGHT && (dy == SUBTILE_TOP || dy == SUBTILE_BOTTOM))) {
+                                subtileType = SubtileType.WALL;
+                            }
+                            break;
+                        case TOP_HEADED_T:
+                            if (dy == SUBTILE_BOTTOM || (dy == SUBTILE_TOP && (dx == SUBTILE_LEFT || dx == SUBTILE_RIGHT))) {
+                                subtileType = SubtileType.WALL;
+                            }
+                            break;
+                        case BOTTOM_HEADED_T:
+                            if (dy == SUBTILE_TOP || (dy == SUBTILE_BOTTOM && (dx == SUBTILE_LEFT || dx == SUBTILE_RIGHT))) {
+                                subtileType = SubtileType.WALL;
+                            }
+                            break;
+                        case EMPTY:
+                            subtileType = SubtileType.WALL;
+                            break;
+                        case UNKNOWN:
+                            break;
+                    }
+                    subtiles[tile.x * SUBTILE_COUNT + dx][tile.y * SUBTILE_COUNT + dy] = subtileType;
                 }
             }
         }
