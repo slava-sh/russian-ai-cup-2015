@@ -19,12 +19,11 @@ public final class MyStrategy implements Strategy {
     public void move(Car self, World world, Game game, Move move) {
         updateFields(self, world, game);
 
-        Point2I target = nextWPSubtile;
-        Point2I nextSubtile = getNextSubtile(toSubtilePoint(self), target);
-        nextSubtile = getNextSubtile(nextSubtile, target);
-        nextSubtile = getNextSubtile(nextSubtile, target);
-        nextSubtile = getNextSubtile(nextSubtile, target);
-        nextSubtile = getNextSubtile(nextSubtile, target);
+        Point2I nextSubtile = getNextSubtile(toSubtilePoint(self));
+        nextSubtile = getNextSubtile(nextSubtile);
+        nextSubtile = getNextSubtile(nextSubtile);
+        nextSubtile = getNextSubtile(nextSubtile);
+        nextSubtile = getNextSubtile(nextSubtile);
         double nextX = (nextSubtile.x + 0.5) * getSubtileSize();
         double nextY = (nextSubtile.y + 0.5) * getSubtileSize();
         double angle = self.getAngleTo(nextX, nextY);
@@ -60,9 +59,9 @@ public final class MyStrategy implements Strategy {
                 move.setWheelTurn(32.0 / PI * angle);
             }
 
-            move.setEnginePower(1.0);
+            move.setEnginePower(0.75);
             if (abs(angle) > PI / 4 && speedModule > STUCK_SPEED) {
-                move.setBrake(true);
+                //move.setBrake(true);
             }
 
             if (state != state.START) {
@@ -90,7 +89,7 @@ public final class MyStrategy implements Strategy {
                     }
 
                 if (self.getNitroChargeCount() > 0 && abs(angle) < PI / 10) {
-                    move.setUseNitro(true);
+                    //move.setUseNitro(true);
                 }
             }
         }
@@ -308,7 +307,12 @@ public final class MyStrategy implements Strategy {
         } while (!vertex.equals(start));
     }
 
-    private Point2I getNextSubtile(Point2I position, Point2I target) {
+    private Point2I getNextSubtile(Point2I position) {
+        Point2I target = nextWPSubtile;
+        if (position.equals(target)) {
+            int[] afterNextWPArray = world.getWaypoints()[(self.getNextWaypointIndex() + 1) % world.getWaypoints().length];
+            target = new Point2I(afterNextWPArray[0] * SUBTILE_COUNT + SUBTILE_COUNT / 2, afterNextWPArray[1] * SUBTILE_COUNT + SUBTILE_COUNT / 2);
+        }
         Endpoints endpoints = new Endpoints(position, target);
         Point2I result = dijkstraNextSubtile.get(endpoints);
         if (result == null) {

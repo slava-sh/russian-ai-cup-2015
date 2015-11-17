@@ -1,4 +1,5 @@
 import model.*;
+import model.TileType;
 
 import java.awt.Graphics;
 import java.awt.Color;
@@ -8,6 +9,7 @@ import java.lang.Override;
 import java.lang.String;
 import java.util.*;
 import java.util.LinkedList;
+import java.util.List;
 
 import static java.lang.StrictMath.*;
 
@@ -20,6 +22,8 @@ public final class LocalTestRendererListener {
     public void beforeDrawScene(Graphics graphics, World world, Game game, int canvasWidth, int canvasHeight,
                                 double left, double top, double width, double height) {
         updateFields(graphics, world, game, canvasWidth, canvasHeight, left, top, width, height);
+
+        renderTileDijkstra();
 
         double trackTileSize = game.getTrackTileSize();
         double nOffset = 60.0D;
@@ -35,7 +39,7 @@ public final class LocalTestRendererListener {
         setColor(new Color(75, 255, 63));
         fillRect(nextWP.x * trackTileSize + 100.0D, nextWP.y * trackTileSize + 100.0D, trackTileSize - 200.0D, trackTileSize - 200.0D);
 
-        //drawSubtileGrid();
+        drawSubtileGrid();
 
         int nextWPId = 1;
         for (int[] waypoint : world.getWaypoints()) {
@@ -86,7 +90,7 @@ public final class LocalTestRendererListener {
                                double left, double top, double width, double height) {
         updateFields(graphics, world, game, canvasWidth, canvasHeight, left, top, width, height);
 
-        //drawTrajectory();
+        drawTrajectory();
 
         double speedModule = hypot(self.getSpeedX(), self.getSpeedY());
         setColor(Color.BLACK);
@@ -109,43 +113,104 @@ public final class LocalTestRendererListener {
         drawString("" + subtileSum, FONT_SIZE_BIG, game.getTrackTileSize(), game.getTrackTileSize());
     }
 
-    private LinkedList<Point2I> realTrajectory = new LinkedList<Point2I>();
-    private LinkedList<Point2I> predictedTrajectory = new LinkedList<Point2I>();
+    private LinkedList<Point2D> realTrajectory = new LinkedList<Point2D>();
+    private LinkedList<Point2D> predictedTrajectory = new LinkedList<Point2D>();
 
     private void drawTrajectory() {
-        double TIME = 50;
+        double TIME = 5;
 
         if (world.getTick() % TIME == 0) {
-            realTrajectory.add(new Point2I(self.getX(), self.getY()));
-            predictedTrajectory.add(new Point2I(self.getX() + self.getSpeedX() * TIME, self.getY() + self.getSpeedY() * TIME));
+            realTrajectory.add(new Point2D(self.getX(), self.getY()));
+            //predictedTrajectory.add(postition);
         }
 
-        for (Point2I point : predictedTrajectory) {
+        for (Point2D point : predictedTrajectory) {
             setColor(Color.CYAN);
-            fillCircle(point.x, point.y, game.getWasherRadius());
+            fillCircle(point.getX(), point.getY(), game.getWasherRadius());
         }
-        for (Point2I point : realTrajectory) {
+        for (Point2D point : realTrajectory) {
             setColor(Color.RED);
-            fillCircle(point.x, point.y, game.getWasherRadius());
+            fillCircle(point.getX(), point.getY(), game.getWasherRadius());
+        }
+    }
+
+    private void renderTileDijkstra() {
+        setColor(Color.BLUE);
+        fillTile(toTilePoint(self));
+        int tileI = 0;
+        for (Point2I tile : getNextTiles(3)) {
+            ++tileI;
+            setColor(Color.PINK);
+            fillTile(tile);
+            setColor(Color.BLACK);
+            drawString("t" + tileI, FONT_SIZE_BIG, tile.getX() * game.getTrackTileSize() + 0.5 * game.getTrackTileSize(), tile.getY() * game.getTrackTileSize() + 0.5 * game.getTrackTileSize());
         }
     }
 
     private void renderBfs() {
-        Point2I subtile = new Point2I(toSubtileCoordinate(self.getX()), toSubtileCoordinate(self.getY()));
         int subtileI = 0;
-        while (true) {
-            if (subtileI == 4 || subtileI == 9) {
+        for (Point2I subtile : getNextSubtiles()) {
+            ++subtileI;
+            if (false) {
                 setColor(Color.PINK);
                 fillSubtile(subtile);
             }
             setColor(Color.RED);
             drawSubtile(subtile);
-            if (subtile.equals(nextWPSubtile)) {
+        }
+    }
+
+    private Point2I getNextWPSubtile() {
+        return getNextWPSubtile(0);
+    }
+
+    private Point2I getNextWPSubtile(int skip) {
+        int[] nextWPArray = world.getWaypoints()[(self.getNextWaypointIndex() + skip) % world.getWaypoints().length];
+        return new Point2I(nextWPArray[0] * SUBTILE_COUNT + SUBTILE_COUNT / 2,
+                           nextWPArray[1] * SUBTILE_COUNT + SUBTILE_COUNT / 2);
+    }
+
+    private Point2I getNextWP() {
+        return getNextWP(0);
+    }
+
+    private Point2I getNextWP(int skip) {
+        int[] nextWPArray = world.getWaypoints()[(self.getNextWaypointIndex() + skip) % world.getWaypoints().length];
+        return new Point2I(nextWPArray[0], nextWPArray[1]);
+    }
+
+    private List<Point2I> getNextSubtiles() {
+        Point2I target = getNextWPSubtile();
+        Point2I subtile = toSubtilePoint(self);
+        List<Point2I> result = new LinkedList<Point2I>();
+        while (true) {
+            if (subtileToTile(target).equals(subtileToTile(subtile))) {
+                target = getNextWPSubtile(1);
+            }
+            Point2I prevSubtile = subtile;
+            subtile = getNextSubtile(subtile, target);
+            if (subtile.equals(prevSubtile)) {
                 break;
             }
-            subtile = getNextSubtile(subtile, nextWPSubtile);
-            ++subtileI;
+            result.add(subtile);
         }
+        return result;
+    }
+
+    private List<Point2I> getNextTiles(int count) {
+        List<Point2I> result = new LinkedList<Point2I>();
+        Point2I tile = toTilePoint(self);
+        for (int skip = 0; result.size() < count; ++skip) {
+            Point2I target = getNextWP(skip);
+            for (Point2I pathTile : tileDijkstra(tile, target)) {
+                result.add(pathTile);
+                if (result.size() == count) {
+                    break;
+                }
+            }
+            tile = target;
+        }
+        return result;
     }
 
     private void fillWallSubtiles() {
@@ -216,6 +281,22 @@ public final class LocalTestRendererListener {
 
     private void drawSubtile(int x, int y) {
         drawRect(x * getSubtileSize(), y * getSubtileSize(), getSubtileSize(), getSubtileSize());
+    }
+
+    private void fillTile(Point2I p) {
+        fillTile(p.getX(), p.getY());
+    }
+
+    private void fillTile(int x, int y) {
+        fillRect(x * game.getTrackTileSize(), y * game.getTrackTileSize(), game.getTrackTileSize(), game.getTrackTileSize());
+    }
+
+    private void drawTile(Point2I p) {
+        drawTile(p.getX(), p.getY());
+    }
+
+    private void drawTile(int x, int y) {
+        drawRect(x * game.getTrackTileSize(), y * game.getTrackTileSize(), game.getTrackTileSize(), game.getTrackTileSize());
     }
 
     private void fillCircle(double centerX, double centerY, double radius) {
@@ -339,24 +420,6 @@ public final class LocalTestRendererListener {
         nextWP = new Point2I(x, y);
         nextWPSubtile = new Point2I(x * SUBTILE_COUNT + SUBTILE_COUNT / 2,
                                     y * SUBTILE_COUNT + SUBTILE_COUNT / 2);
-
-        int[] afterNextWPArray = world.getWaypoints()[(self.getNextWaypointIndex() + 1) % world.getWaypoints().length];
-        Point2I afterNextWPSubtile = new Point2I(afterNextWPArray[0] * SUBTILE_COUNT + SUBTILE_COUNT / 2,
-                                                 afterNextWPArray[1] * SUBTILE_COUNT + SUBTILE_COUNT / 2);
-
-        int dist = manhattanDistance(nextWPSubtile, afterNextWPSubtile);
-        for (int dx = 0; dx < SUBTILE_COUNT; ++dx) {
-            for (int dy = 0; dy < SUBTILE_COUNT; ++dy) {
-                Point2I option = new Point2I(x * SUBTILE_COUNT + dx, y * SUBTILE_COUNT + dy);
-                int optionDist = manhattanDistance(option, afterNextWPSubtile);
-                if (subtilesXY[option.x][option.y] != SubtileType.WALL) {
-                    if (optionDist < dist) {
-                        nextWPSubtile = option;
-                        dist = optionDist;
-                    }
-                }
-            }
-        }
     }
 
     private int manhattanDistance(Point2I a, Point2I b) {
@@ -376,6 +439,14 @@ public final class LocalTestRendererListener {
         SUBTILE_RIGHT = SUBTILE_COUNT - 1;
         SUBTILE_TOP = 0;
         SUBTILE_BOTTOM = SUBTILE_COUNT - 1;
+    }
+
+    private int toTileCoordinate(double coordinate) {
+        return (int) (coordinate / game.getTrackTileSize());
+    }
+
+    private Point2I toTilePoint(Unit unit) {
+        return new Point2I(toTileCoordinate(unit.getX()), toTileCoordinate(unit.getY()));
     }
 
     private int toSubtileCoordinate(double coordinate) {
@@ -473,6 +544,58 @@ public final class LocalTestRendererListener {
         }
     }
 
+    private static final Point2I[] tileDijkstraDXY = {
+            new Point2I(0, -1),
+            new Point2I(1, 0),
+            new Point2I(0, 1),
+            new Point2I(-1, 0),
+    };
+
+    private List<Point2I> tileDijkstra(Point2I start, Point2I end) {
+        Map<Point2I, Point2I> prev = new HashMap<Point2I, Point2I>();
+        Map<Point2I, Double> dist = new HashMap<Point2I, Double>();
+        Queue<Point2I> queue = new PriorityQueue<Point2I>(new Comparator<Point2I>() {
+            @Override
+            public int compare(Point2I a, Point2I b) {
+                return Double.compare(dist.get(a), dist.get(b));
+            }
+        });
+        prev.put(start, start);
+        dist.put(start, 0.0);
+        queue.add(start);
+        TileType[][] tiles = world.getTilesXY();
+        while (!queue.isEmpty()) {
+            Point2I vertex = queue.remove();
+            if (vertex.equals(end)) {
+                break;
+            }
+            for (Point2I dxy : DXY) {
+                Point2I nextVertex = new Point2I(vertex.x + dxy.x, vertex.y + dxy.y);
+                if (0 <= nextVertex.x && nextVertex.x < tiles.length
+                        && 0 <= nextVertex.y && nextVertex.y < tiles[nextVertex.x].length
+                        && tiles[nextVertex.x][nextVertex.y] != TileType.EMPTY
+                        && tiles[nextVertex.x][nextVertex.y] != TileType.UNKNOWN
+                        && !prev.containsKey(nextVertex)) {
+                    Double option = dist.get(vertex) + hypot(nextVertex.x - vertex.x, nextVertex.y - vertex.y);
+                    if (option < dist.getOrDefault(nextVertex, Double.POSITIVE_INFINITY)) {
+                        prev.put(nextVertex, vertex);
+                        dist.put(nextVertex, option);
+                        queue.add(nextVertex);
+                    }
+                }
+            }
+        }
+
+        List<Point2I> path = new LinkedList<Point2I>();
+        Point2I vertex = end;
+        do {
+            path.add(vertex);
+            vertex = prev.get(vertex);
+        } while (!vertex.equals(start));
+        Collections.reverse(path);
+        return path;
+    }
+
     private static final Point2I[] DXY = {
             new Point2I(0, -1),
             new Point2I(1, -1),
@@ -535,6 +658,14 @@ public final class LocalTestRendererListener {
             result = dijkstraNextSubtile.get(endpoints);
         }
         return result;
+    }
+
+    private Point2I subtileToTile(Point2I subtile) {
+        return new Point2I(subtile.x / SUBTILE_COUNT, subtile.y / SUBTILE_COUNT);
+    }
+
+    private Point2I getNextTile(Point2I position) {
+        return null;
     }
 }
 
@@ -631,12 +762,12 @@ class Point2D {
     private double x;
     private double y;
 
-    private Point2D(double x, double y) {
+    public Point2D(double x, double y) {
         this.x = x;
         this.y = y;
     }
 
-    private Point2D() {
+    public Point2D() {
     }
 
     public double getX() {
