@@ -753,36 +753,6 @@ class Point2I {
     }
 }
 
-class Endpoints {
-    public final Point2I start;
-    public final Point2I end;
-
-    public Endpoints(Point2I start, Point2I end) {
-        this.start = start;
-        this.end = end;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        Endpoints endpoints = (Endpoints) o;
-
-        if (!start.equals(endpoints.start)) return false;
-        if (!end.equals(endpoints.end)) return false;
-
-        return true;
-    }
-
-    @Override
-    public int hashCode() {
-        int result = start.hashCode();
-        result = 31 * result + end.hashCode();
-        return result;
-    }
-}
-
 class Point2D {
     private double x;
     private double y;
