@@ -93,6 +93,7 @@ public final class MyStrategy implements Strategy {
     }
 
     private Car self;
+    private Point2D nose;
     private World world;
     private Game game;
 
@@ -102,18 +103,6 @@ public final class MyStrategy implements Strategy {
                                 self.getY() + sin(self.getAngle()) * game.getCarWidth() / 2);
         this.world = world;
         this.game = game;
-
-
-        setNextWP(self.getNextWaypointX(), self.getNextWaypointY());
-    }
-
-    private Point2I nextWP;
-    private Point2I nextWPSubtile;
-
-    private void setNextWP(int x, int y) {
-        nextWP = new Point2I(x, y); // TODO: need this?
-        nextWPSubtile = new Point2I(x * SUBTILE_COUNT + SUBTILE_COUNT / 2,
-                                    y * SUBTILE_COUNT + SUBTILE_COUNT / 2);
     }
 
     private int manhattanDistance(Point2I a, Point2I b) {

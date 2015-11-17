@@ -23,6 +23,7 @@ public final class LocalTestRendererListener {
                                 double left, double top, double width, double height) {
         updateFields(graphics, world, game, canvasWidth, canvasHeight, left, top, width, height);
 
+        Point2I nextWP = new Point2I(self.getNextWaypointX(), self.getNextWaypointY());
         double trackTileSize = game.getTrackTileSize();
         double nOffset = 60.0D;
 
@@ -339,21 +340,6 @@ public final class LocalTestRendererListener {
                                         self.getY() + sin(self.getAngle()) * game.getCarWidth() / 2);
             }
         }
-
-        setNextWP(self.getNextWaypointX(), self.getNextWaypointY());
-    }
-
-    private Point2I nextWP;
-    private Point2I nextWPSubtile;
-
-    private void setNextWP(int x, int y) {
-        nextWP = new Point2I(x, y);
-        nextWPSubtile = new Point2I(x * SUBTILE_COUNT + SUBTILE_COUNT / 2,
-                                    y * SUBTILE_COUNT + SUBTILE_COUNT / 2);
-    }
-
-    private int manhattanDistance(Point2I a, Point2I b) {
-        return abs(a.x - b.x) + abs(a.y - b.y);
     }
 
     enum SubtileType {WALL, ROAD};
