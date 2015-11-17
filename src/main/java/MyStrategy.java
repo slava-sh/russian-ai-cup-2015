@@ -19,11 +19,8 @@ public final class MyStrategy implements Strategy {
     public void move(Car self, World world, Game game, Move move) {
         updateFields(self, world, game);
 
-        Point2I nextSubtile = getNextSubtile(toSubtilePoint(self));
-        nextSubtile = getNextSubtile(nextSubtile);
-        nextSubtile = getNextSubtile(nextSubtile);
-        nextSubtile = getNextSubtile(nextSubtile);
-        nextSubtile = getNextSubtile(nextSubtile);
+        List<Point2I> nextSubtiles = getNextSubtiles();
+        Point2I nextSubtile = nextSubtiles.get(3);
         double nextX = (nextSubtile.x + 0.5) * getSubtileSize();
         double nextY = (nextSubtile.y + 0.5) * getSubtileSize();
         double angle = self.getAngleTo(nextX, nextY);
@@ -104,10 +101,6 @@ public final class MyStrategy implements Strategy {
         this.world = world;
         this.game = game;
 
-        if (subtilesXY == null || needRebuildSubtiles) {
-            needRebuildSubtiles = false;
-            createSubtiles();
-        }
 
         setNextWP(self.getNextWaypointX(), self.getNextWaypointY());
     }
@@ -116,27 +109,9 @@ public final class MyStrategy implements Strategy {
     private Point2I nextWPSubtile;
 
     private void setNextWP(int x, int y) {
-        nextWP = new Point2I(x, y);
+        nextWP = new Point2I(x, y); // TODO: need this?
         nextWPSubtile = new Point2I(x * SUBTILE_COUNT + SUBTILE_COUNT / 2,
                                     y * SUBTILE_COUNT + SUBTILE_COUNT / 2);
-
-        int[] afterNextWPArray = world.getWaypoints()[(self.getNextWaypointIndex() + 1) % world.getWaypoints().length];
-        Point2I afterNextWPSubtile = new Point2I(afterNextWPArray[0] * SUBTILE_COUNT + SUBTILE_COUNT / 2,
-                                                 afterNextWPArray[1] * SUBTILE_COUNT + SUBTILE_COUNT / 2);
-
-        int dist = manhattanDistance(nextWPSubtile, afterNextWPSubtile);
-        for (int dx = 0; dx < SUBTILE_COUNT; ++dx) {
-            for (int dy = 0; dy < SUBTILE_COUNT; ++dy) {
-                Point2I option = new Point2I(x * SUBTILE_COUNT + dx, y * SUBTILE_COUNT + dy);
-                int optionDist = manhattanDistance(option, afterNextWPSubtile);
-                if (subtilesXY[option.x][option.y] != SubtileType.WALL) {
-                    if (optionDist < dist) {
-                        nextWPSubtile = option;
-                        dist = optionDist;
-                    }
-                }
-            }
-        }
     }
 
     private int manhattanDistance(Point2I a, Point2I b) {
@@ -158,102 +133,59 @@ public final class MyStrategy implements Strategy {
         SUBTILE_BOTTOM = SUBTILE_COUNT - 1;
     }
 
-    private int toSubtileCoordinate(double coordinate) {
-        return (int) (coordinate / getSubtileSize());
-    }
+    private static final Point2I[] tileDijkstraDXY = {
+            new Point2I(0, -1),
+            new Point2I(1, 0),
+            new Point2I(0, 1),
+            new Point2I(-1, 0),
+    };
 
-    private Point2I toSubtilePoint(Unit unit) {
-        return new Point2I(toSubtileCoordinate(unit.getX()), toSubtileCoordinate(unit.getY()));
-    }
-
-    private double getSubtileSize() {
-        return game.getTrackTileSize() / SUBTILE_COUNT;
-    }
-
-    private SubtileType[][] subtilesXY;
-    private boolean needRebuildSubtiles = false;
-
-    private void createSubtiles() {
-        subtilesXY = new SubtileType[world.getWidth() * SUBTILE_COUNT][world.getHeight() * SUBTILE_COUNT];
-        for (int tileX = 0; tileX < world.getWidth(); ++tileX) {
-            for (int i = 0; i < SUBTILE_COUNT; ++i) {
-                int subtileX = tileX * SUBTILE_COUNT + i;
-                for (int tileY = 0; tileY < world.getWidth(); ++tileY) {
-                    for (int j = 0; j < SUBTILE_COUNT; ++j) {
-                        int subtileY = tileY * SUBTILE_COUNT + j;
-                        SubtileType subtileType = SubtileType.ROAD;
-                        switch (world.getTilesXY()[tileX][tileY]) {
-                            case LEFT_TOP_CORNER:
-                                if (i == SUBTILE_LEFT || j == SUBTILE_TOP || (i == SUBTILE_RIGHT && j == SUBTILE_BOTTOM)) {
-                                    subtileType = SubtileType.WALL;
-                                }
-                                break;
-                            case RIGHT_TOP_CORNER:
-                                if (i == SUBTILE_RIGHT || j == SUBTILE_TOP || (i == SUBTILE_LEFT && j == SUBTILE_BOTTOM)) {
-                                    subtileType = SubtileType.WALL;
-                                }
-                                break;
-                            case LEFT_BOTTOM_CORNER:
-                                if (i == SUBTILE_LEFT || j == SUBTILE_BOTTOM || (i == SUBTILE_RIGHT && j == SUBTILE_TOP)) {
-                                    subtileType = SubtileType.WALL;
-                                }
-                                break;
-                            case RIGHT_BOTTOM_CORNER:
-                                if (i == SUBTILE_RIGHT || j == SUBTILE_BOTTOM || (i == SUBTILE_LEFT && j == SUBTILE_TOP)) {
-                                    subtileType = SubtileType.WALL;
-                                }
-                                break;
-                            case VERTICAL:
-                                if (i == SUBTILE_LEFT || i == SUBTILE_RIGHT) {
-                                    subtileType = SubtileType.WALL;
-                                }
-                                break;
-                            case HORIZONTAL:
-                                if (j == SUBTILE_TOP || j == SUBTILE_BOTTOM) {
-                                    subtileType = SubtileType.WALL;
-                                }
-                                break;
-                            case CROSSROADS:
-                                if ((i == SUBTILE_LEFT || i == SUBTILE_RIGHT) && (j == SUBTILE_TOP || j == SUBTILE_BOTTOM)) {
-                                    subtileType = SubtileType.WALL;
-                                }
-                                break;
-                            case LEFT_HEADED_T:
-                                if (i == SUBTILE_RIGHT || (i == SUBTILE_LEFT && (j == SUBTILE_TOP || j == SUBTILE_BOTTOM))) {
-                                    subtileType = SubtileType.WALL;
-                                }
-                                break;
-                            case RIGHT_HEADED_T:
-                                if (i == SUBTILE_LEFT || (i == SUBTILE_RIGHT && (j == SUBTILE_TOP || j == SUBTILE_BOTTOM))) {
-                                    subtileType = SubtileType.WALL;
-                                }
-                                break;
-                            case TOP_HEADED_T:
-                                if (j == SUBTILE_BOTTOM || (j == SUBTILE_TOP && (i == SUBTILE_LEFT || i == SUBTILE_RIGHT))) {
-                                    subtileType = SubtileType.WALL;
-                                }
-                                break;
-                            case BOTTOM_HEADED_T:
-                                if (j == SUBTILE_TOP || (j == SUBTILE_BOTTOM && (i == SUBTILE_LEFT || i == SUBTILE_RIGHT))) {
-                                    subtileType = SubtileType.WALL;
-                                }
-                                break;
-                            case EMPTY:
-                                subtileType = SubtileType.WALL;
-                                break;
-                            case UNKNOWN:
-                                needRebuildSubtiles = true;
-                                break;
-                            default:
-                        }
-                        subtilesXY[subtileX][subtileY] = subtileType;
+    private List<Point2I> tileDijkstra(Point2I start, Point2I end) {
+        Map<Point2I, Point2I> prev = new HashMap<Point2I, Point2I>();
+        Map<Point2I, Double> dist = new HashMap<Point2I, Double>();
+        Queue<Point2I> queue = new PriorityQueue<Point2I>(new Comparator<Point2I>() {
+            @Override
+            public int compare(Point2I a, Point2I b) {
+                return Double.compare(dist.get(a), dist.get(b));
+            }
+        });
+        prev.put(start, start);
+        dist.put(start, 0.0);
+        queue.add(start);
+        TileType[][] tiles = world.getTilesXY();
+        while (!queue.isEmpty()) {
+            Point2I vertex = queue.remove();
+            if (vertex.equals(end)) {
+                break;
+            }
+            for (Point2I dxy : tileDijkstraDXY) {
+                Point2I nextVertex = new Point2I(vertex.x + dxy.x, vertex.y + dxy.y);
+                if (0 <= nextVertex.x && nextVertex.x < tiles.length
+                        && 0 <= nextVertex.y && nextVertex.y < tiles[nextVertex.x].length
+                        && tiles[nextVertex.x][nextVertex.y] != TileType.EMPTY
+                        && tiles[nextVertex.x][nextVertex.y] != TileType.UNKNOWN
+                        && !prev.containsKey(nextVertex)) {
+                    Double option = dist.get(vertex) + hypot(nextVertex.x - vertex.x, nextVertex.y - vertex.y);
+                    if (option < dist.getOrDefault(nextVertex, Double.POSITIVE_INFINITY)) {
+                        prev.put(nextVertex, vertex);
+                        dist.put(nextVertex, option);
+                        queue.add(nextVertex);
                     }
                 }
             }
         }
+
+        List<Point2I> path = new LinkedList<Point2I>();
+        Point2I vertex = end;
+        do {
+            path.add(vertex);
+            vertex = prev.get(vertex);
+        } while (!vertex.equals(start));
+        Collections.reverse(path);
+        return path;
     }
 
-    private static final Point2I[] DXY = {
+    private static final Point2I[] subtileDijkstraDXY = {
             new Point2I(0, -1),
             new Point2I(1, -1),
             new Point2I(1, 0),
@@ -264,9 +196,7 @@ public final class MyStrategy implements Strategy {
             new Point2I(-1, -1),
     };
 
-    private Map<Endpoints, Point2I> dijkstraNextSubtile = new HashMap<Endpoints, Point2I>();
-
-    private void dijkstra(Point2I start, Point2I end) {
+    private List<Point2I> subtileDijkstra(Point2I start, Point2I end, SubtileType[][] subtiles) {
         Map<Point2I, Point2I> prev = new HashMap<Point2I, Point2I>();
         Map<Point2I, Double> dist = new HashMap<Point2I, Double>();
         Queue<Point2I> queue = new PriorityQueue<Point2I>(new Comparator<Point2I>() {
@@ -283,11 +213,11 @@ public final class MyStrategy implements Strategy {
             if (vertex.equals(end)) {
                 break;
             }
-            for (Point2I dxy : DXY) {
+            for (Point2I dxy : subtileDijkstraDXY) {
                 Point2I nextVertex = new Point2I(vertex.x + dxy.x, vertex.y + dxy.y);
-                if (0 <= nextVertex.x && nextVertex.x < subtilesXY.length
-                        && 0 <= nextVertex.y && nextVertex.y < subtilesXY[nextVertex.x].length
-                        && subtilesXY[nextVertex.x][nextVertex.y] != SubtileType.WALL
+                if (0 <= nextVertex.x && nextVertex.x < subtiles.length
+                        && 0 <= nextVertex.y && nextVertex.y < subtiles[nextVertex.x].length
+                        && subtiles[nextVertex.x][nextVertex.y] != SubtileType.WALL
                         && !prev.containsKey(nextVertex)) {
                     Double option = dist.get(vertex) + hypot(nextVertex.x - vertex.x, nextVertex.y - vertex.y);
                     if (option < dist.getOrDefault(nextVertex, Double.POSITIVE_INFINITY)) {
@@ -299,27 +229,87 @@ public final class MyStrategy implements Strategy {
             }
         }
 
+        List<Point2I> path = new LinkedList<Point2I>();
         Point2I vertex = end;
         do {
-            Point2I prevVertex = prev.get(vertex);
-            dijkstraNextSubtile.put(new Endpoints(prevVertex, end), vertex);
-            vertex = prevVertex;
+            path.add(vertex);
+            vertex = prev.get(vertex);
         } while (!vertex.equals(start));
+        Collections.reverse(path);
+        return path;
     }
 
-    private Point2I getNextSubtile(Point2I position) {
-        Point2I target = nextWPSubtile;
-        if (position.equals(target)) {
-            int[] afterNextWPArray = world.getWaypoints()[(self.getNextWaypointIndex() + 1) % world.getWaypoints().length];
-            target = new Point2I(afterNextWPArray[0] * SUBTILE_COUNT + SUBTILE_COUNT / 2, afterNextWPArray[1] * SUBTILE_COUNT + SUBTILE_COUNT / 2);
-        }
-        Endpoints endpoints = new Endpoints(position, target);
-        Point2I result = dijkstraNextSubtile.get(endpoints);
-        if (result == null) {
-            dijkstra(position, target);
-            result = dijkstraNextSubtile.get(endpoints);
+    private Point2I getNextWP(int skip) {
+        int[] nextWPArray = world.getWaypoints()[(self.getNextWaypointIndex() + skip) % world.getWaypoints().length];
+        return new Point2I(nextWPArray[0], nextWPArray[1]);
+    }
+
+    private List<Point2I> getNextTiles(int count) {
+        List<Point2I> result = new LinkedList<Point2I>();
+        Point2I tile = toTilePoint(self);
+        for (int skip = 0; result.size() < count; ++skip) {
+            Point2I target = getNextWP(skip);
+            for (Point2I pathTile : tileDijkstra(tile, target)) {
+                result.add(pathTile);
+                if (result.size() == count) {
+                    break;
+                }
+            }
+            tile = target;
         }
         return result;
+    }
+
+    private List<Point2I> getNextSubtiles() {
+        List<Point2I> tiles = getNextTiles(3);
+        tiles.add(0, toTilePoint(self));
+
+        SubtileType[][] subtiles = new SubtileType[world.getWidth() * SUBTILE_COUNT][world.getHeight() * SUBTILE_COUNT];
+        for (int x = 0; x < subtiles.length; ++x) {
+            for (int y = 0; y < subtiles[x].length; ++y) {
+                subtiles[x][y] = SubtileType.WALL;
+            }
+        }
+        for (Point2I tile : tiles) {
+            for (int dx = 0; dx < SUBTILE_COUNT; ++dx) {
+                for (int dy = 0; dy < SUBTILE_COUNT; ++dy) {
+                    subtiles[tile.x * SUBTILE_COUNT + dx][tile.y * SUBTILE_COUNT + dy] = SubtileType.ROAD;
+                }
+            }
+        }
+
+        Point2I start = toSubtilePoint(self);
+        Point2I end = centerSubtile(tiles.get(tiles.size() - 1));
+        return subtileDijkstra(start, end, subtiles);
+    }
+
+    private Point2I centerSubtile(Point2I tile) {
+        return new Point2I(tile.getX() * SUBTILE_COUNT + SUBTILE_COUNT / 2,
+                tile.getY() * SUBTILE_COUNT + SUBTILE_COUNT / 2);
+    }
+
+    private Point2I subtileToTile(Point2I subtile) {
+        return new Point2I(subtile.x / SUBTILE_COUNT, subtile.y / SUBTILE_COUNT);
+    }
+
+    private int toTileCoordinate(double coordinate) {
+        return (int) (coordinate / game.getTrackTileSize());
+    }
+
+    private Point2I toTilePoint(Unit unit) {
+        return new Point2I(toTileCoordinate(unit.getX()), toTileCoordinate(unit.getY()));
+    }
+
+    private int toSubtileCoordinate(double coordinate) {
+        return (int) (coordinate / getSubtileSize());
+    }
+
+    private Point2I toSubtilePoint(Unit unit) {
+        return new Point2I(toSubtileCoordinate(unit.getX()), toSubtileCoordinate(unit.getY()));
+    }
+
+    private double getSubtileSize() {
+        return game.getTrackTileSize() / SUBTILE_COUNT;
     }
 }
 

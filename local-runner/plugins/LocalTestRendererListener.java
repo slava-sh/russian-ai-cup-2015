@@ -150,77 +150,14 @@ public final class LocalTestRendererListener {
     private void renderSubtileDijkstra() {
         int subtileI = 0;
         for (Point2I subtile : getNextSubtiles()) {
-            ++subtileI;
-            if (false) {
+            if (subtileI == 3) {
                 setColor(Color.PINK);
                 fillSubtile(subtile);
             }
             setColor(Color.RED);
-            fillSubtile(subtile);
+            drawSubtile(subtile);
+            ++subtileI;
         }
-    }
-
-    private Point2I getNextWPSubtile() {
-        return getNextWPSubtile(0);
-    }
-
-    private Point2I getNextWPSubtile(int skip) {
-        int[] nextWPArray = world.getWaypoints()[(self.getNextWaypointIndex() + skip) % world.getWaypoints().length];
-        return new Point2I(nextWPArray[0] * SUBTILE_COUNT + SUBTILE_COUNT / 2,
-                           nextWPArray[1] * SUBTILE_COUNT + SUBTILE_COUNT / 2);
-    }
-
-    private Point2I getNextWP() {
-        return getNextWP(0);
-    }
-
-    private Point2I getNextWP(int skip) {
-        int[] nextWPArray = world.getWaypoints()[(self.getNextWaypointIndex() + skip) % world.getWaypoints().length];
-        return new Point2I(nextWPArray[0], nextWPArray[1]);
-    }
-
-    private List<Point2I> getNextSubtiles() {
-        List<Point2I> tiles = getNextTiles(3);
-        tiles.add(0, toTilePoint(self));
-
-        SubtileType[][] subtiles = new SubtileType[world.getWidth() * SUBTILE_COUNT][world.getHeight() * SUBTILE_COUNT];
-        for (int x = 0; x < subtiles.length; ++x) {
-            for (int y = 0; y < subtiles[x].length; ++y) {
-                subtiles[x][y] = SubtileType.WALL;
-            }
-        }
-        for (Point2I tile : tiles) {
-            for (int dx = 0; dx < SUBTILE_COUNT; ++dx) {
-                for (int dy = 0; dy < SUBTILE_COUNT; ++dy) {
-                    subtiles[tile.x * SUBTILE_COUNT + dx][tile.y * SUBTILE_COUNT + dy] = SubtileType.ROAD;
-                }
-            }
-        }
-
-        Point2I start = toSubtilePoint(self);
-        Point2I end = centerSubtile(tiles.get(tiles.size() - 1));
-        return subtileDijkstra(start, end, subtiles);
-    }
-
-    private Point2I centerSubtile(Point2I tile) {
-        return new Point2I(tile.getX() * SUBTILE_COUNT + SUBTILE_COUNT / 2,
-                           tile.getY() * SUBTILE_COUNT + SUBTILE_COUNT / 2);
-    }
-
-    private List<Point2I> getNextTiles(int count) {
-        List<Point2I> result = new LinkedList<Point2I>();
-        Point2I tile = toTilePoint(self);
-        for (int skip = 0; result.size() < count; ++skip) {
-            Point2I target = getNextWP(skip);
-            for (Point2I pathTile : tileDijkstra(tile, target)) {
-                result.add(pathTile);
-                if (result.size() == count) {
-                    break;
-                }
-            }
-            tile = target;
-        }
-        return result;
     }
 
     private void drawSubtileGrid() {
@@ -433,26 +370,6 @@ public final class LocalTestRendererListener {
         SUBTILE_BOTTOM = SUBTILE_COUNT - 1;
     }
 
-    private int toTileCoordinate(double coordinate) {
-        return (int) (coordinate / game.getTrackTileSize());
-    }
-
-    private Point2I toTilePoint(Unit unit) {
-        return new Point2I(toTileCoordinate(unit.getX()), toTileCoordinate(unit.getY()));
-    }
-
-    private int toSubtileCoordinate(double coordinate) {
-        return (int) (coordinate / getSubtileSize());
-    }
-
-    private Point2I toSubtilePoint(Unit unit) {
-        return new Point2I(toSubtileCoordinate(unit.getX()), toSubtileCoordinate(unit.getY()));
-    }
-
-    private double getSubtileSize() {
-        return game.getTrackTileSize() / SUBTILE_COUNT;
-    }
-
     private static final Point2I[] tileDijkstraDXY = {
             new Point2I(0, -1),
             new Point2I(1, 0),
@@ -559,8 +476,77 @@ public final class LocalTestRendererListener {
         return path;
     }
 
+    private Point2I getNextWP(int skip) {
+        int[] nextWPArray = world.getWaypoints()[(self.getNextWaypointIndex() + skip) % world.getWaypoints().length];
+        return new Point2I(nextWPArray[0], nextWPArray[1]);
+    }
+
+    private List<Point2I> getNextTiles(int count) {
+        List<Point2I> result = new LinkedList<Point2I>();
+        Point2I tile = toTilePoint(self);
+        for (int skip = 0; result.size() < count; ++skip) {
+            Point2I target = getNextWP(skip);
+            for (Point2I pathTile : tileDijkstra(tile, target)) {
+                result.add(pathTile);
+                if (result.size() == count) {
+                    break;
+                }
+            }
+            tile = target;
+        }
+        return result;
+    }
+
+    private List<Point2I> getNextSubtiles() {
+        List<Point2I> tiles = getNextTiles(3);
+        tiles.add(0, toTilePoint(self));
+
+        SubtileType[][] subtiles = new SubtileType[world.getWidth() * SUBTILE_COUNT][world.getHeight() * SUBTILE_COUNT];
+        for (int x = 0; x < subtiles.length; ++x) {
+            for (int y = 0; y < subtiles[x].length; ++y) {
+                subtiles[x][y] = SubtileType.WALL;
+            }
+        }
+        for (Point2I tile : tiles) {
+            for (int dx = 0; dx < SUBTILE_COUNT; ++dx) {
+                for (int dy = 0; dy < SUBTILE_COUNT; ++dy) {
+                    subtiles[tile.x * SUBTILE_COUNT + dx][tile.y * SUBTILE_COUNT + dy] = SubtileType.ROAD;
+                }
+            }
+        }
+
+        Point2I start = toSubtilePoint(self);
+        Point2I end = centerSubtile(tiles.get(tiles.size() - 1));
+        return subtileDijkstra(start, end, subtiles);
+    }
+
+    private Point2I centerSubtile(Point2I tile) {
+        return new Point2I(tile.getX() * SUBTILE_COUNT + SUBTILE_COUNT / 2,
+                tile.getY() * SUBTILE_COUNT + SUBTILE_COUNT / 2);
+    }
+
     private Point2I subtileToTile(Point2I subtile) {
         return new Point2I(subtile.x / SUBTILE_COUNT, subtile.y / SUBTILE_COUNT);
+    }
+
+    private int toTileCoordinate(double coordinate) {
+        return (int) (coordinate / game.getTrackTileSize());
+    }
+
+    private Point2I toTilePoint(Unit unit) {
+        return new Point2I(toTileCoordinate(unit.getX()), toTileCoordinate(unit.getY()));
+    }
+
+    private int toSubtileCoordinate(double coordinate) {
+        return (int) (coordinate / getSubtileSize());
+    }
+
+    private Point2I toSubtilePoint(Unit unit) {
+        return new Point2I(toSubtileCoordinate(unit.getX()), toSubtileCoordinate(unit.getY()));
+    }
+
+    private double getSubtileSize() {
+        return game.getTrackTileSize() / SUBTILE_COUNT;
     }
 }
 
