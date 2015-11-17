@@ -20,7 +20,7 @@ public final class MyStrategy implements Strategy {
         updateFields(self, world, game);
 
         List<Point2I> nextSubtiles = getNextSubtiles();
-        Point2I nextSubtile = nextSubtiles.get(2);
+        Point2I nextSubtile = nextSubtiles.get(1);
         double nextX = (nextSubtile.x + 0.5) * getSubtileSize();
         double nextY = (nextSubtile.y + 0.5) * getSubtileSize();
         double angle = self.getAngleTo(nextX, nextY);
@@ -56,9 +56,10 @@ public final class MyStrategy implements Strategy {
                 move.setWheelTurn(32.0 / PI * angle);
             }
 
-            move.setEnginePower(1.0);
+            move.setEnginePower(0.5 + max(0, (PI / 4 - abs(angle)) * 2 / PI));
             if (abs(angle) > PI / 6 && speedModule > STUCK_SPEED) {
                 move.setBrake(true);
+                move.setEnginePower(1.0);
             }
 
             if (state != state.START) {
@@ -394,6 +395,7 @@ public final class MyStrategy implements Strategy {
 
             addWall(subtiles, a, bc.x, bc.y);
             addWall(subtiles, a, -ab.x, -ab.y);
+
             addWall(subtiles, a, bc.x - ab.x * SUBTILE_COUNT, bc.y - ab.y * SUBTILE_COUNT);
             addWall(subtiles, a, ab.x - ab.x * SUBTILE_COUNT, ab.y - ab.y * SUBTILE_COUNT);
         }
@@ -402,7 +404,9 @@ public final class MyStrategy implements Strategy {
     private void addWall(SubtileType[][] subtiles, Point2I tile, int offsetX, int offsetY) {
         int x = tile.x * SUBTILE_COUNT + SUBTILE_COUNT / 2 + offsetX;
         int y = tile.y * SUBTILE_COUNT + SUBTILE_COUNT / 2 + offsetY;
-        subtiles[x][y] = SubtileType.WALL;
+        if (0 <= x && x < subtiles.length && 0 <= y && y < subtiles[x].length) {
+            subtiles[x][y] = SubtileType.WALL;
+        }
     }
 
     private Point2I centerSubtile(Point2I tile) {

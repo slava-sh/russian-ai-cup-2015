@@ -92,6 +92,7 @@ public final class LocalTestRendererListener {
         updateFields(graphics, world, game, canvasWidth, canvasHeight, left, top, width, height);
 
         drawTrajectory();
+        drawBrake();
 
         double speedModule = hypot(self.getSpeedX(), self.getSpeedY());
         setColor(Color.BLACK);
@@ -112,6 +113,15 @@ public final class LocalTestRendererListener {
         }
         setColor(Color.BLACK);
         drawString("" + subtileSum, FONT_SIZE_BIG, game.getTrackTileSize(), game.getTrackTileSize());
+    }
+
+    private void drawBrake() {
+        final double ANGLE = PI / 6;
+        setColor(Color.GRAY);
+        double angle = self.getAngle();
+        double length = game.getTrackTileSize();
+        drawLine(self.getX(), self.getY(), self.getX() + cos(angle + ANGLE) * length, self.getY() + sin(angle + ANGLE) * length);
+        drawLine(self.getX(), self.getY(), self.getX() + cos(angle - ANGLE) * length, self.getY() + sin(angle - ANGLE) * length);
     }
 
     private LinkedList<Point2D> realTrajectory = new LinkedList<Point2D>();
@@ -149,7 +159,7 @@ public final class LocalTestRendererListener {
     private void renderSubtileDijkstra() {
         int subtileI = 0;
         for (Point2I subtile : getNextSubtiles()) {
-            if (subtileI == 2) {
+            if (subtileI == 1) {
                 setColor(Color.PINK);
                 fillSubtile(subtile);
             }
@@ -639,6 +649,7 @@ public final class LocalTestRendererListener {
 
             addWall(subtiles, a, bc.x, bc.y);
             addWall(subtiles, a, -ab.x, -ab.y);
+
             addWall(subtiles, a, bc.x - ab.x * SUBTILE_COUNT, bc.y - ab.y * SUBTILE_COUNT);
             addWall(subtiles, a, ab.x - ab.x * SUBTILE_COUNT, ab.y - ab.y * SUBTILE_COUNT);
         }
@@ -647,7 +658,9 @@ public final class LocalTestRendererListener {
     private void addWall(SubtileType[][] subtiles, Point2I tile, int offsetX, int offsetY) {
         int x = tile.x * SUBTILE_COUNT + SUBTILE_COUNT / 2 + offsetX;
         int y = tile.y * SUBTILE_COUNT + SUBTILE_COUNT / 2 + offsetY;
-        subtiles[x][y] = SubtileType.WALL;
+        if (0 <= x && x < subtiles.length && 0 <= y && y < subtiles[x].length) {
+            subtiles[x][y] = SubtileType.WALL;
+        }
     }
 
     private Point2I centerSubtile(Point2I tile) {
