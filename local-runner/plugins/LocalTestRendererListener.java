@@ -142,8 +142,6 @@ public final class LocalTestRendererListener {
             ++tileI;
             setColor(Color.GREEN);
             drawTile(tile);
-            setColor(Color.BLACK);
-            drawString("t" + tileI, FONT_SIZE_BIG, tile.getX() * game.getTrackTileSize() + 0.5 * game.getTrackTileSize(), tile.getY() * game.getTrackTileSize() + 0.5 * game.getTrackTileSize());
         }
     }
 
@@ -574,6 +572,10 @@ public final class LocalTestRendererListener {
                             break;
                     }
                     subtiles[tile.x * SUBTILE_COUNT + dx][tile.y * SUBTILE_COUNT + dy] = subtileType;
+                    if (subtileType == SubtileType.WALL) {
+                        setColor(Color.LIGHT_GRAY);
+                        fillSubtile(tile.x * SUBTILE_COUNT + dx, tile.y * SUBTILE_COUNT + dy);
+                    }
                 }
             }
         }
