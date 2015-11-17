@@ -148,7 +148,7 @@ public final class LocalTestRendererListener {
     private void renderSubtileDijkstra() {
         int subtileI = 0;
         for (Point2I subtile : getNextSubtiles()) {
-            if (subtileI == 3) {
+            if (subtileI == 2) {
                 setColor(Color.PINK);
                 fillSubtile(subtile);
             }
@@ -394,17 +394,19 @@ public final class LocalTestRendererListener {
                 break;
             }
             for (Point2I dxy : tileDijkstraDXY) {
-                Point2I nextVertex = new Point2I(vertex.x + dxy.x, vertex.y + dxy.y);
-                if (0 <= nextVertex.x && nextVertex.x < tiles.length
-                        && 0 <= nextVertex.y && nextVertex.y < tiles[nextVertex.x].length
-                        && tiles[nextVertex.x][nextVertex.y] != TileType.EMPTY
-                        && tiles[nextVertex.x][nextVertex.y] != TileType.UNKNOWN
-                        && !prev.containsKey(nextVertex)) {
-                    Double option = dist.get(vertex) + hypot(nextVertex.x - vertex.x, nextVertex.y - vertex.y);
-                    if (option < dist.getOrDefault(nextVertex, Double.POSITIVE_INFINITY)) {
-                        prev.put(nextVertex, vertex);
-                        dist.put(nextVertex, option);
-                        queue.add(nextVertex);
+                if (canGo(tiles[vertex.x][vertex.y], dxy)) {
+                    Point2I nextVertex = new Point2I(vertex.x + dxy.x, vertex.y + dxy.y);
+                    if (0 <= nextVertex.x && nextVertex.x < tiles.length
+                            && 0 <= nextVertex.y && nextVertex.y < tiles[nextVertex.x].length
+                            && tiles[nextVertex.x][nextVertex.y] != TileType.EMPTY
+                            && tiles[nextVertex.x][nextVertex.y] != TileType.UNKNOWN
+                            && !prev.containsKey(nextVertex)) {
+                        Double option = dist.get(vertex) + hypot(nextVertex.x - vertex.x, nextVertex.y - vertex.y);
+                        if (option < dist.getOrDefault(nextVertex, Double.POSITIVE_INFINITY)) {
+                            prev.put(nextVertex, vertex);
+                            dist.put(nextVertex, option);
+                            queue.add(nextVertex);
+                        }
                     }
                 }
             }
@@ -418,6 +420,44 @@ public final class LocalTestRendererListener {
         } while (!vertex.equals(start));
         Collections.reverse(path);
         return path;
+    }
+
+    private static final Point2I DIRECTION_UP    = new Point2I(0, -1);
+    private static final Point2I DIRECTION_DOWN  = new Point2I(0, 1);
+    private static final Point2I DIRECTION_LEFT  = new Point2I(-1, 0);
+    private static final Point2I DIRECTION_RIGHT = new Point2I(1, 0);
+
+    private boolean canGo(TileType type, Point2I direction) {
+        switch (type) {
+            case LEFT_TOP_CORNER:
+                return direction.equals(DIRECTION_DOWN) || direction.equals(DIRECTION_RIGHT);
+            case RIGHT_TOP_CORNER:
+                return direction.equals(DIRECTION_DOWN) || direction.equals(DIRECTION_LEFT);
+            case LEFT_BOTTOM_CORNER:
+                return direction.equals(DIRECTION_UP) || direction.equals(DIRECTION_RIGHT);
+            case RIGHT_BOTTOM_CORNER:
+                return direction.equals(DIRECTION_UP) || direction.equals(DIRECTION_LEFT);
+            case VERTICAL:
+                return direction.equals(DIRECTION_UP) || direction.equals(DIRECTION_DOWN);
+            case HORIZONTAL:
+                return direction.equals(DIRECTION_LEFT) || direction.equals(DIRECTION_RIGHT);
+            case CROSSROADS:
+                return true;
+            case LEFT_HEADED_T:
+                return !direction.equals(DIRECTION_RIGHT);
+            case RIGHT_HEADED_T:
+                return !direction.equals(DIRECTION_LEFT);
+            case TOP_HEADED_T:
+                return !direction.equals(DIRECTION_DOWN);
+            case BOTTOM_HEADED_T:
+                return !direction.equals(DIRECTION_UP);
+            case EMPTY:
+                return false;
+            case UNKNOWN:
+                return true;
+            default:
+                return false;
+        }
     }
 
     private static final Point2I[] subtileDijkstraDXY = {
@@ -572,7 +612,18 @@ public final class LocalTestRendererListener {
                             break;
                     }
                     subtiles[tile.x * SUBTILE_COUNT + dx][tile.y * SUBTILE_COUNT + dy] = subtileType;
-                    if (subtileType == SubtileType.WALL) {
+                }
+            }
+        }
+
+        addWalls(tiles.get(0), tiles.get(1), tiles.get(2), subtiles);
+        addWalls(tiles.get(1), tiles.get(2), tiles.get(3), subtiles);
+
+        // TODO: refactor this
+        for (Point2I tile : tiles) {
+            for (int dx = 0; dx < SUBTILE_COUNT; ++dx) {
+                for (int dy = 0; dy < SUBTILE_COUNT; ++dy) {
+                    if (subtiles[tile.x * SUBTILE_COUNT + dx][tile.y * SUBTILE_COUNT + dy] == SubtileType.WALL) {
                         setColor(Color.LIGHT_GRAY);
                         fillSubtile(tile.x * SUBTILE_COUNT + dx, tile.y * SUBTILE_COUNT + dy);
                     }
@@ -583,6 +634,31 @@ public final class LocalTestRendererListener {
         Point2I start = toSubtilePoint(self);
         Point2I end = centerSubtile(tiles.get(tiles.size() - 1));
         return subtileDijkstra(start, end, subtiles);
+    }
+
+    private void addWalls(Point2I a, Point2I b, Point2I c, SubtileType[][] subtiles) {
+        Point2I ac = new Point2I(c.x - a.x, c.y - a.y);
+        if (abs(ac.x) == 1 && abs(ac.y) == 1) { // Not straight
+            Point2I ab = new Point2I(b.x - a.x, b.y - a.y);
+            Point2I bc = new Point2I(c.x - b.x, c.y - b.y);
+
+            addWall(subtiles, b, 0, 0);
+            addWall(subtiles, b, ab.x, ab.y);
+            addWall(subtiles, b, ab.x + bc.x, ab.y + bc.y);
+            addWall(subtiles, b, -bc.x, -bc.y);
+            addWall(subtiles, b, -bc.x - ab.x, -bc.y - ab.y);
+
+            addWall(subtiles, a, bc.x, bc.y);
+            addWall(subtiles, a, -ab.x, -ab.y);
+            addWall(subtiles, a, bc.x - ab.x * SUBTILE_COUNT, bc.y - ab.y * SUBTILE_COUNT);
+            addWall(subtiles, a, ab.x - ab.x * SUBTILE_COUNT, ab.y - ab.y * SUBTILE_COUNT);
+        }
+    }
+
+    private void addWall(SubtileType[][] subtiles, Point2I tile, int offsetX, int offsetY) {
+        int x = tile.x * SUBTILE_COUNT + SUBTILE_COUNT / 2 + offsetX;
+        int y = tile.y * SUBTILE_COUNT + SUBTILE_COUNT / 2 + offsetY;
+        subtiles[x][y] = SubtileType.WALL;
     }
 
     private Point2I centerSubtile(Point2I tile) {
