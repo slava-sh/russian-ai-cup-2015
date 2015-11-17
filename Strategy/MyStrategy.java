@@ -377,6 +377,8 @@ public final class MyStrategy implements Strategy {
 
         Point2I start = toSubtilePoint(nose);
         Point2I end = centerSubtile(tiles.get(tiles.size() - 1));
+        subtiles[start.x][start.y] = SubtileType.ROAD;
+        subtiles[end.x][end.y] = SubtileType.ROAD;
         return subtileDijkstra(start, end, subtiles);
     }
 
