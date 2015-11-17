@@ -469,7 +469,11 @@ public final class LocalTestRendererListener {
             new Point2I(-1, -1),
     };
 
+    // TODO: vary on bonus type
+    private static final double BONUS_REWARD = -1.0; // straight is 1.0, diagonal is 1.41421356
+
     private List<Point2I> subtileDijkstra(Point2I start, Point2I end, SubtileType[][] subtiles) {
+        Map<Point2I, Integer> bonusCount = countBonuses();
         Map<Point2I, Point2I> prev = new HashMap<Point2I, Point2I>();
         Map<Point2I, Double> dist = new HashMap<Point2I, Double>();
         Queue<Point2I> queue = new PriorityQueue<Point2I>(new Comparator<Point2I>() {
@@ -492,7 +496,9 @@ public final class LocalTestRendererListener {
                         && 0 <= nextVertex.y && nextVertex.y < subtiles[nextVertex.x].length
                         && subtiles[nextVertex.x][nextVertex.y] != SubtileType.WALL
                         && !prev.containsKey(nextVertex)) {
-                    Double option = dist.get(vertex) + hypot(nextVertex.x - vertex.x, nextVertex.y - vertex.y);
+                    Double option = dist.get(vertex)
+                            + hypot(nextVertex.x - vertex.x, nextVertex.y - vertex.y)
+                            + BONUS_REWARD * bonusCount.getOrDefault(nextVertex, 0);
                     if (option < dist.getOrDefault(nextVertex, Double.POSITIVE_INFINITY)) {
                         prev.put(nextVertex, vertex);
                         dist.put(nextVertex, option);
@@ -510,6 +516,15 @@ public final class LocalTestRendererListener {
         } while (!vertex.equals(start));
         Collections.reverse(path);
         return path;
+    }
+
+    private Map<Point2I, Integer> countBonuses() {
+        Map<Point2I, Integer> result = new HashMap<Point2I, Integer>();
+        for (Bonus bonus : world.getBonuses()) {
+            Point2I subtile = toSubtilePoint(bonus);
+            result.put(subtile, result.getOrDefault(subtile, 0) + 1);
+        }
+        return result;
     }
 
     private Point2I getNextWP(int skip) {
@@ -709,6 +724,10 @@ public final class LocalTestRendererListener {
 
     private int toSubtileCoordinate(double coordinate) {
         return (int) (coordinate / getSubtileSize());
+    }
+
+    private Point2I toSubtilePoint(Unit unit) {
+        return new Point2I(toSubtileCoordinate(unit.getX()), toSubtileCoordinate(unit.getY()));
     }
 
     private Point2I toSubtilePoint(Point2D unit) {
