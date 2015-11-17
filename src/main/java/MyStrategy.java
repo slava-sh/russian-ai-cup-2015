@@ -98,6 +98,8 @@ public final class MyStrategy implements Strategy {
 
     private void updateFields(Car self, World world, Game game) {
         this.self = self;
+        this.nose = new Point2D(self.getX() + cos(self.getAngle()) * game.getCarWidth() / 2,
+                                self.getY() + sin(self.getAngle()) * game.getCarWidth() / 2);
         this.world = world;
         this.game = game;
 
@@ -286,7 +288,7 @@ public final class MyStrategy implements Strategy {
 
     private List<Point2I> getNextTiles(int count) {
         List<Point2I> result = new LinkedList<Point2I>();
-        Point2I tile = toTilePoint(self);
+        Point2I tile = toTilePoint(nose);
         for (int skip = 0; result.size() < count; ++skip) {
             Point2I target = getNextWP(skip);
             for (Point2I pathTile : tileDijkstra(tile, target)) {
@@ -302,7 +304,7 @@ public final class MyStrategy implements Strategy {
 
     private List<Point2I> getNextSubtiles() {
         List<Point2I> tiles = getNextTiles(3);
-        tiles.add(0, toTilePoint(self));
+        tiles.add(0, toTilePoint(nose));
 
         SubtileType[][] subtiles = new SubtileType[world.getWidth() * SUBTILE_COUNT][world.getHeight() * SUBTILE_COUNT];
         for (int x = 0; x < subtiles.length; ++x) {
@@ -384,7 +386,7 @@ public final class MyStrategy implements Strategy {
         addWalls(tiles.get(0), tiles.get(1), tiles.get(2), subtiles);
         addWalls(tiles.get(1), tiles.get(2), tiles.get(3), subtiles);
 
-        Point2I start = toSubtilePoint(self);
+        Point2I start = toSubtilePoint(nose);
         Point2I end = centerSubtile(tiles.get(tiles.size() - 1));
         return subtileDijkstra(start, end, subtiles);
     }
@@ -427,7 +429,7 @@ public final class MyStrategy implements Strategy {
         return (int) (coordinate / game.getTrackTileSize());
     }
 
-    private Point2I toTilePoint(Unit unit) {
+    private Point2I toTilePoint(Point2D unit) {
         return new Point2I(toTileCoordinate(unit.getX()), toTileCoordinate(unit.getY()));
     }
 
@@ -435,7 +437,7 @@ public final class MyStrategy implements Strategy {
         return (int) (coordinate / getSubtileSize());
     }
 
-    private Point2I toSubtilePoint(Unit unit) {
+    private Point2I toSubtilePoint(Point2D unit) {
         return new Point2I(toSubtileCoordinate(unit.getX()), toSubtileCoordinate(unit.getY()));
     }
 
@@ -530,5 +532,34 @@ class Endpoints {
         int result = start.hashCode();
         result = 31 * result + end.hashCode();
         return result;
+    }
+}
+
+class Point2D {
+    private double x;
+    private double y;
+
+    public Point2D(double x, double y) {
+        this.x = x;
+        this.y = y;
+    }
+
+    public Point2D() {
+    }
+
+    public double getX() {
+        return x;
+    }
+
+    public void setX(double x) {
+        this.x = x;
+    }
+
+    public double getY() {
+        return y;
+    }
+
+    public void setY(double y) {
+        this.y = y;
     }
 }

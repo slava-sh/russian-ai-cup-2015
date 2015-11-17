@@ -120,7 +120,7 @@ public final class LocalTestRendererListener {
         double TIME = 5;
 
         if (world.getTick() % TIME == 0) {
-            realTrajectory.add(new Point2D(self.getX(), self.getY()));
+            realTrajectory.add(new Point2D(nose.getX(), nose.getY()));
             //predictedTrajectory.add(postition);
         }
 
@@ -136,7 +136,7 @@ public final class LocalTestRendererListener {
 
     private void renderTileDijkstra() {
         setColor(Color.BLUE);
-        drawTile(toTilePoint(self));
+        drawTile(toTilePoint(nose));
         int tileI = 0;
         for (Point2I tile : getNextTiles(3)) {
             ++tileI;
@@ -308,6 +308,7 @@ public final class LocalTestRendererListener {
 
     private long myId = -1;
     private Car self;
+    private Point2D nose;
 
     private void updateFields(Graphics graphics, World world, Game game, int canvasWidth, int canvasHeight,
                               double left, double top, double width, double height) {
@@ -334,6 +335,8 @@ public final class LocalTestRendererListener {
         for (Car car : world.getCars()) {
             if (car.getPlayerId() == myId) {
                 this.self = car;
+                this.nose = new Point2D(self.getX() + cos(self.getAngle()) * game.getCarWidth() / 2,
+                                        self.getY() + sin(self.getAngle()) * game.getCarWidth() / 2);
             }
         }
 
@@ -521,7 +524,7 @@ public final class LocalTestRendererListener {
 
     private List<Point2I> getNextTiles(int count) {
         List<Point2I> result = new LinkedList<Point2I>();
-        Point2I tile = toTilePoint(self);
+        Point2I tile = toTilePoint(nose);
         for (int skip = 0; result.size() < count; ++skip) {
             Point2I target = getNextWP(skip);
             for (Point2I pathTile : tileDijkstra(tile, target)) {
@@ -537,7 +540,7 @@ public final class LocalTestRendererListener {
 
     private List<Point2I> getNextSubtiles() {
         List<Point2I> tiles = getNextTiles(3);
-        tiles.add(0, toTilePoint(self));
+        tiles.add(0, toTilePoint(nose));
 
         SubtileType[][] subtiles = new SubtileType[world.getWidth() * SUBTILE_COUNT][world.getHeight() * SUBTILE_COUNT];
         for (int x = 0; x < subtiles.length; ++x) {
@@ -631,7 +634,7 @@ public final class LocalTestRendererListener {
             }
         }
 
-        Point2I start = toSubtilePoint(self);
+        Point2I start = toSubtilePoint(nose);
         Point2I end = centerSubtile(tiles.get(tiles.size() - 1));
         return subtileDijkstra(start, end, subtiles);
     }
@@ -674,7 +677,7 @@ public final class LocalTestRendererListener {
         return (int) (coordinate / game.getTrackTileSize());
     }
 
-    private Point2I toTilePoint(Unit unit) {
+    private Point2I toTilePoint(Point2D unit) {
         return new Point2I(toTileCoordinate(unit.getX()), toTileCoordinate(unit.getY()));
     }
 
@@ -682,7 +685,7 @@ public final class LocalTestRendererListener {
         return (int) (coordinate / getSubtileSize());
     }
 
-    private Point2I toSubtilePoint(Unit unit) {
+    private Point2I toSubtilePoint(Point2D unit) {
         return new Point2I(toSubtileCoordinate(unit.getX()), toSubtileCoordinate(unit.getY()));
     }
 
