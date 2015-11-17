@@ -2,7 +2,8 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/MyStrategy.iml" filepath="$PROJECT_DIR$/MyStrategy.iml" />
+      <module fileurl="file://$PROJECT_DIR$/Renderer/Renderer.iml" filepath="$PROJECT_DIR$/Renderer/Renderer.iml" />
+      <module fileurl="file://$PROJECT_DIR$/Strategy/Strategy.iml" filepath="$PROJECT_DIR$/Strategy/Strategy.iml" />
     </modules>
   </component>
 </project>
