@@ -143,7 +143,7 @@ public final class LocalTestRendererListener {
             if (subtile.equals(nextWPSubtile)) {
                 break;
             }
-            subtile = getNextSubtile(subtile);
+            subtile = getNextSubtile(subtile, nextWPSubtile);
             ++subtileI;
         }
     }
@@ -391,6 +391,7 @@ public final class LocalTestRendererListener {
     }
 
     private SubtileType[][] subtilesXY;
+    private boolean needRebuildSubtiles = false;
 
     private void createSubtiles() {
         subtilesXY = new SubtileType[world.getWidth() * SUBTILE_COUNT][world.getHeight() * SUBTILE_COUNT];
@@ -460,6 +461,9 @@ public final class LocalTestRendererListener {
                             case EMPTY:
                                 subtileType = SubtileType.WALL;
                                 break;
+                            case UNKNOWN:
+                                needRebuildSubtiles = true;
+                                break;
                             default:
                         }
                         subtilesXY[subtileX][subtileY] = subtileType;
@@ -492,7 +496,7 @@ public final class LocalTestRendererListener {
             }
         });
         prev.put(start, start);
-        dist.put(start, 0D);
+        dist.put(start, 0.0);
         queue.add(start);
         while (!queue.isEmpty()) {
             Point2I vertex = queue.remove();
@@ -523,11 +527,11 @@ public final class LocalTestRendererListener {
         } while (!vertex.equals(start));
     }
 
-    private Point2I getNextSubtile(Point2I position) {
-        Endpoints endpoints = new Endpoints(position, nextWPSubtile);
+    private Point2I getNextSubtile(Point2I position, Point2I target) {
+        Endpoints endpoints = new Endpoints(position, target);
         Point2I result = dijkstraNextSubtile.get(endpoints);
         if (result == null) {
-            dijkstra(position, nextWPSubtile);
+            dijkstra(position, target);
             result = dijkstraNextSubtile.get(endpoints);
         }
         return result;
@@ -550,7 +554,7 @@ class Point2I {
 
     private static int toInt(double value) {
         @SuppressWarnings("NumericCastThatLosesPrecision") int intValue = (int) value;
-        if (abs((double) intValue - value) < 1.0D) {
+        if (abs((double) intValue - value) < 1.0) {
             return intValue;
         }
         throw new IllegalArgumentException("Can't convert double " + value + " to int.");
