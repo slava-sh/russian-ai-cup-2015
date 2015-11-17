@@ -156,7 +156,6 @@ public final class MyStrategy implements Strategy {
                     if (0 <= nextVertex.x && nextVertex.x < tiles.length
                             && 0 <= nextVertex.y && nextVertex.y < tiles[nextVertex.x].length
                             && tiles[nextVertex.x][nextVertex.y] != TileType.EMPTY
-                            && tiles[nextVertex.x][nextVertex.y] != TileType.UNKNOWN
                             && !prev.containsKey(nextVertex)) {
                         Double option = dist.get(vertex) + hypot(nextVertex.x - vertex.x, nextVertex.y - vertex.y);
                         if (option < dist.getOrDefault(nextVertex, Double.POSITIVE_INFINITY)) {
