@@ -116,7 +116,7 @@ public final class LocalTestRendererListener {
     }
 
     private void drawBrake() {
-        final double ANGLE = PI / 6;
+        final double ANGLE = PI / 8;
         setColor(Color.GRAY);
         double angle = self.getAngle();
         double length = game.getTrackTileSize();
@@ -159,7 +159,7 @@ public final class LocalTestRendererListener {
     private void renderSubtileDijkstra() {
         int subtileI = 0;
         for (Point2I subtile : getNextSubtiles()) {
-            if (subtileI == 1) {
+            if (subtileI == 2) {
                 setColor(Color.PINK);
                 fillSubtile(subtile);
             }
@@ -648,10 +648,10 @@ public final class LocalTestRendererListener {
             addWall(subtiles, b, -bc.x - ab.x, -bc.y - ab.y);
 
             addWall(subtiles, a, bc.x, bc.y);
-            addWall(subtiles, a, -ab.x, -ab.y);
+            //addWall(subtiles, a, -ab.x, -ab.y);
 
-            addWall(subtiles, a, bc.x - ab.x * SUBTILE_COUNT, bc.y - ab.y * SUBTILE_COUNT);
-            addWall(subtiles, a, ab.x - ab.x * SUBTILE_COUNT, ab.y - ab.y * SUBTILE_COUNT);
+            //addWall(subtiles, a, bc.x - ab.x * SUBTILE_COUNT, bc.y - ab.y * SUBTILE_COUNT);
+            //addWall(subtiles, a, ab.x - ab.x * SUBTILE_COUNT, ab.y - ab.y * SUBTILE_COUNT);
         }
     }
 

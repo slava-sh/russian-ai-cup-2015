@@ -20,7 +20,7 @@ public final class MyStrategy implements Strategy {
         updateFields(self, world, game);
 
         List<Point2I> nextSubtiles = getNextSubtiles();
-        Point2I nextSubtile = nextSubtiles.get(1);
+        Point2I nextSubtile = nextSubtiles.get(2);
         double nextX = (nextSubtile.x + 0.5) * getSubtileSize();
         double nextY = (nextSubtile.y + 0.5) * getSubtileSize();
         double angle = self.getAngleTo(nextX, nextY);
@@ -38,7 +38,7 @@ public final class MyStrategy implements Strategy {
         }
         else if (state == State.STUCK
                 && (speedModule > STUCK_SPEED
-                || abs(angle) < PI / 6
+                || abs(angle) < PI / 5
                 || world.getTick() - stuckStartTick > LONG_STUCK_TICKS)) {
             state = State.RUN;
             stuckTickCount = 0;
@@ -56,8 +56,8 @@ public final class MyStrategy implements Strategy {
                 move.setWheelTurn(32.0 / PI * angle);
             }
 
-            move.setEnginePower(0.5 + max(0, (PI / 4 - abs(angle)) * 2 / PI));
-            if (abs(angle) > PI / 6 && speedModule > STUCK_SPEED) {
+            move.setEnginePower(1.0); // 0.5 + max(0, (PI / 4 - abs(angle)) * 3 / 2 / PI));
+            if (speedModule * abs(angle) > 25.0 * PI / 8 && speedModule > STUCK_SPEED) {
                 move.setBrake(true);
                 move.setEnginePower(1.0);
             }
@@ -87,7 +87,7 @@ public final class MyStrategy implements Strategy {
                     }
 
                 if (self.getNitroChargeCount() > 0 && abs(angle) < PI / 10) {
-                    //move.setUseNitro(true);
+                    move.setUseNitro(true);
                 }
             }
         }
@@ -394,10 +394,10 @@ public final class MyStrategy implements Strategy {
             addWall(subtiles, b, -bc.x - ab.x, -bc.y - ab.y);
 
             addWall(subtiles, a, bc.x, bc.y);
-            addWall(subtiles, a, -ab.x, -ab.y);
+            //addWall(subtiles, a, -ab.x, -ab.y);
 
-            addWall(subtiles, a, bc.x - ab.x * SUBTILE_COUNT, bc.y - ab.y * SUBTILE_COUNT);
-            addWall(subtiles, a, ab.x - ab.x * SUBTILE_COUNT, ab.y - ab.y * SUBTILE_COUNT);
+            //addWall(subtiles, a, bc.x - ab.x * SUBTILE_COUNT, bc.y - ab.y * SUBTILE_COUNT);
+            //addWall(subtiles, a, ab.x - ab.x * SUBTILE_COUNT, ab.y - ab.y * SUBTILE_COUNT);
         }
     }
 
