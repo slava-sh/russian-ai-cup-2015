@@ -102,8 +102,15 @@ public final class MyStrategy implements Strategy {
                                 self.getY() + sin(self.getAngle()) * game.getCarWidth() / 2);
         this.world = world;
         this.game = game;
-    }
 
+        Point2I currentTile = toTilePoint(nose);
+        if (recentTiles.isEmpty() || !recentTiles.getLast().equals(currentTile)) {
+            recentTiles.addLast(currentTile);
+            if (recentTiles.size() > KEEP_RECENT_TILES) {
+               recentTiles.removeFirst();
+            }
+        }
+    }
 
     enum SubtileType {WALL, ROAD};
 
@@ -126,6 +133,10 @@ public final class MyStrategy implements Strategy {
             new Point2I(0, 1),
             new Point2I(-1, 0),
     };
+
+    private Deque<Point2I> recentTiles = new LinkedList<Point2I>();
+    private static final int KEEP_RECENT_TILES = 2;
+    private static final double RECENT_TILE_COST_FACTOR = 1.5;
 
     private List<Point2I> tileDijkstra(Point2I start, Point2I end) {
         Map<Point2I, Point2I> prev = new HashMap<Point2I, Point2I>();
@@ -152,7 +163,8 @@ public final class MyStrategy implements Strategy {
                             && 0 <= nextVertex.y && nextVertex.y < tiles[nextVertex.x].length
                             && tiles[nextVertex.x][nextVertex.y] != TileType.EMPTY
                             && !prev.containsKey(nextVertex)) {
-                        Double option = dist.get(vertex) + hypot(nextVertex.x - vertex.x, nextVertex.y - vertex.y);
+                        double recentTileCostFactor = recentTiles.contains(nextVertex) ? RECENT_TILE_COST_FACTOR : 1;
+                        Double option = dist.get(vertex) + hypot(nextVertex.x - vertex.x, nextVertex.y - vertex.y) * recentTileCostFactor;
                         if (option < dist.getOrDefault(nextVertex, Double.POSITIVE_INFINITY)) {
                             prev.put(nextVertex, vertex);
                             dist.put(nextVertex, option);
@@ -223,7 +235,7 @@ public final class MyStrategy implements Strategy {
     };
 
     // TODO: vary on bonus type
-    private static final double BONUS_REWARD = -1.0; // straight is 1.0, diagonal is 1.41421356
+    private static final double BONUS_COST_FACTOR = 0.6;
 
     private List<Point2I> subtileDijkstra(Point2I start, Point2I end, SubtileType[][] subtiles) {
         Map<Point2I, Integer> bonusCount = countBonuses();
@@ -249,9 +261,8 @@ public final class MyStrategy implements Strategy {
                         && 0 <= nextVertex.y && nextVertex.y < subtiles[nextVertex.x].length
                         && subtiles[nextVertex.x][nextVertex.y] != SubtileType.WALL
                         && !prev.containsKey(nextVertex)) {
-                    Double option = dist.get(vertex)
-                            + hypot(nextVertex.x - vertex.x, nextVertex.y - vertex.y)
-                            + BONUS_REWARD * bonusCount.getOrDefault(nextVertex, 0);
+                    double bonusCostFactor = pow(BONUS_COST_FACTOR, bonusCount.getOrDefault(nextVertex, 0));
+                    Double option = dist.get(vertex) + hypot(nextVertex.x - vertex.x, nextVertex.y - vertex.y) * bonusCostFactor;
                     if (option < dist.getOrDefault(nextVertex, Double.POSITIVE_INFINITY)) {
                         prev.put(nextVertex, vertex);
                         dist.put(nextVertex, option);
