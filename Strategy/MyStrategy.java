@@ -6,7 +6,7 @@ import static java.lang.StrictMath.*;
 public final class MyStrategy implements Strategy {
 
     private static final double BRAKE_SPEED = 10.0;
-    private static final double DAMAGE_EPS = 0.01;
+    private static final double DAMAGE_EPS = 0.001;
     private static final double STUCK_SPEED = 5.0;
     private static final int STUCK_START_TICKS = 150;
     private static final int STUCK_DURATION = 150;
@@ -33,6 +33,7 @@ public final class MyStrategy implements Strategy {
 
         double speedModule = hypot(self.getSpeedX(), self.getSpeedY());
         if (state == state.RUN) {
+            // TODO: don't wait when pointed at a wall
             if (speedModule < STUCK_SPEED
                     && self.getDurability() > DAMAGE_EPS
                     && ++stuckTickCount >= STUCK_START_TICKS){
@@ -52,17 +53,11 @@ public final class MyStrategy implements Strategy {
             move.setWheelTurn(-32.0 / PI * angle);
         }
         else {
-            boolean isReverse = self.getEnginePower() < 0.0;
-            if (isReverse) {
-                move.setWheelTurn(-32.0 / PI * angle);
-            } else {
-                move.setWheelTurn(32.0 / PI * angle);
-            }
-
-            move.setEnginePower(1.0); // 0.5 + max(0, (PI / 4 - abs(angle)) * 3 / 2 / PI));
+            // TODO: improve steering to cause less damage
+            move.setWheelTurn(32.0 / PI * angle);
+            move.setEnginePower(1.0);
             if (speedModule * abs(angle) > 25.0 * PI / 8 && speedModule > BRAKE_SPEED) {
                 move.setBrake(true);
-                move.setEnginePower(1.0);
             }
 
             if (state != state.START) {
