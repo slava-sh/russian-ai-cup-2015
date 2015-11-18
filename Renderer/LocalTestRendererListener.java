@@ -320,6 +320,8 @@ public final class LocalTestRendererListener {
     private Point2I noseTile;
     private Point2I noseSubtile;
 
+    private Map<Point2I, Integer> bonusCount;
+
     private void updateFields(Graphics graphics, World world, Game game, int canvasWidth, int canvasHeight,
                               double left, double top, double width, double height) {
         this.graphics = graphics;
@@ -345,20 +347,22 @@ public final class LocalTestRendererListener {
         for (Car car : world.getCars()) {
             if (car.getPlayerId() == myId) {
                 this.self = car;
-                this.nose = new Point2D(self.getX() + cos(self.getAngle()) * game.getCarWidth() / 2,
-                                        self.getY() + sin(self.getAngle()) * game.getCarWidth() / 2);
-                this.noseTile = toTilePoint(nose);
-                this.noseSubtile = toSubtilePoint(nose);
             }
         }
 
-        Point2I currentTile = noseTile;
-        if (recentTiles.isEmpty() || !recentTiles.getLast().equals(currentTile)) {
-            recentTiles.addLast(currentTile);
+        nose = new Point2D(self.getX() + cos(self.getAngle()) * game.getCarWidth() / 2,
+           self.getY() + sin(self.getAngle()) * game.getCarWidth() / 2);
+        noseTile = toTilePoint(nose);
+        noseSubtile = toSubtilePoint(nose);
+
+        if (recentTiles.isEmpty() || !recentTiles.getLast().equals(noseTile)) {
+            recentTiles.addLast(noseTile);
             if (recentTiles.size() > KEEP_RECENT_TILES) {
                 recentTiles.removeFirst();
             }
         }
+
+        bonusCount = countBonuses();
     }
 
     enum SubtileType {WALL, ROAD};
@@ -439,9 +443,11 @@ public final class LocalTestRendererListener {
 
     private double tileCostFactor(Point2I tile) {
         double result = 1.0;
+
         if (recentTiles.contains(tile)) {
             result *= RECENT_TILE_COST_FACTOR;
         }
+
         if (max(abs(tile.x - noseTile.x), abs(tile.y - noseTile.y)) <= STRAIGHT_TILE_RADIUS) {
             double angle = self.getAngleTo((tile.x + 0.5) * game.getTrackTileSize(),
                                            (tile.y + 0.5) * game.getTrackTileSize());
@@ -449,6 +455,7 @@ public final class LocalTestRendererListener {
                 result *= STRAIGHT_TILE_COST_FACTOR;
             }
         }
+
         return result;
     }
 
@@ -505,7 +512,6 @@ public final class LocalTestRendererListener {
     private static final double BONUS_COST_FACTOR = 0.3;
 
     private List<Point2I> subtileDijkstra(Point2I start, Point2I end, SubtileType[][] subtiles) {
-        Map<Point2I, Integer> bonusCount = countBonuses();
         Map<Point2I, Point2I> prev = new HashMap<Point2I, Point2I>();
         Map<Point2I, Double> dist = new HashMap<Point2I, Double>();
         Queue<Point2I> queue = new PriorityQueue<Point2I>(new Comparator<Point2I>() {
@@ -528,8 +534,7 @@ public final class LocalTestRendererListener {
                         && 0 <= nextVertex.y && nextVertex.y < subtiles[nextVertex.x].length
                         && subtiles[nextVertex.x][nextVertex.y] != SubtileType.WALL
                         && !prev.containsKey(nextVertex)) {
-                    double bonusCostFactor = pow(BONUS_COST_FACTOR, bonusCount.getOrDefault(nextVertex, 0));
-                    Double option = dist.get(vertex) + hypot(nextVertex.x - vertex.x, nextVertex.y - vertex.y) * bonusCostFactor;
+                    Double option = dist.get(vertex) + hypot(nextVertex.x - vertex.x, nextVertex.y - vertex.y) * subtileCostFactor(nextVertex);
                     if (option < dist.getOrDefault(nextVertex, Double.POSITIVE_INFINITY)) {
                         prev.put(nextVertex, vertex);
                         dist.put(nextVertex, option);
@@ -547,6 +552,17 @@ public final class LocalTestRendererListener {
         } while (!vertex.equals(start));
         Collections.reverse(path);
         return path;
+    }
+
+    private double subtileCostFactor(Point2I subtile) {
+        double result = 1.0;
+
+        Integer count = bonusCount.get(subtile);
+        if (count != null) {
+            result *= pow(BONUS_COST_FACTOR, count);
+        }
+
+        return result;
     }
 
     private Map<Point2I, Integer> countBonuses() {
