@@ -491,7 +491,7 @@ public final class LocalTestRendererListener {
     };
 
     // TODO: vary on bonus type
-    private static final double BONUS_COST_FACTOR = 0.6;
+    private static final double BONUS_COST_FACTOR = 0.3;
 
     private List<Point2I> subtileDijkstra(Point2I start, Point2I end, SubtileType[][] subtiles) {
         Map<Point2I, Integer> bonusCount = countBonuses();
