@@ -50,7 +50,15 @@ public final class MyStrategy implements Strategy {
         }
 
         if (state == State.STUCK) {
-            move.setEnginePower(-1.0);
+            double requiredTime = abs(self.getWheelTurn()) / game.getCarWheelTurnChangePerTick();
+            int timePassed = world.getTick() - stuckStartTick;
+            int timeLeft = STUCK_DURATION - timePassed;
+            if (timeLeft > requiredTime) {
+                move.setEnginePower(-1.0);
+            }
+            else {
+                move.setEnginePower(1.0);
+            }
             move.setWheelTurn(-32.0 / PI * angle);
         } else {
             // TODO: improve steering to cause less damage
