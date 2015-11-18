@@ -8,7 +8,7 @@ public final class MyStrategy implements Strategy {
     private static final double BRAKE_SPEED = 10.0;
     private static final double DAMAGE_EPS = 0.001;
     private static final double STUCK_SPEED = 5.0;
-    private static final int STUCK_START_TICKS = 150;
+    private static final int STUCK_START_TICKS = 80;
     private static final int STUCK_DURATION = 150;
 
     enum State {START, RUN, STUCK}
@@ -264,7 +264,7 @@ public final class MyStrategy implements Strategy {
     };
 
     // TODO: vary on bonus type
-    private static final double BONUS_COST_FACTOR = 0.3;
+    private static final double BONUS_COST_FACTOR = 0.5;
 
     private List<Point2I> subtileDijkstra(Point2I start, Point2I end, SubtileType[][] subtiles) {
         Map<Point2I, Point2I> prev = new HashMap<Point2I, Point2I>();
