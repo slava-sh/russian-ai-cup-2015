@@ -131,7 +131,7 @@ public final class LocalTestRendererListener {
         double TIME = 5;
 
         if (world.getTick() % TIME == 0) {
-            realTrajectory.add(new Point2D(nose.getX(), nose.getY()));
+            realTrajectory.add(nose);
             //predictedTrajectory.add(postition);
         }
 
@@ -317,6 +317,8 @@ public final class LocalTestRendererListener {
     private long myId = -1;
     private Car self;
     private Point2D nose;
+    private Point2I noseTile;
+    private Point2I noseSubtile;
 
     private void updateFields(Graphics graphics, World world, Game game, int canvasWidth, int canvasHeight,
                               double left, double top, double width, double height) {
@@ -345,14 +347,16 @@ public final class LocalTestRendererListener {
                 this.self = car;
                 this.nose = new Point2D(self.getX() + cos(self.getAngle()) * game.getCarWidth() / 2,
                                         self.getY() + sin(self.getAngle()) * game.getCarWidth() / 2);
+                this.noseTile = toTilePoint(nose);
+                this.noseSubtile = toSubtilePoint(nose);
             }
         }
 
-        Point2I currentTile = toTilePoint(nose);
+        Point2I currentTile = noseTile;
         if (recentTiles.isEmpty() || !recentTiles.getLast().equals(currentTile)) {
             recentTiles.addLast(currentTile);
             if (recentTiles.size() > KEEP_RECENT_TILES) {
-               recentTiles.removeFirst();
+                recentTiles.removeFirst();
             }
         }
     }
@@ -379,10 +383,6 @@ public final class LocalTestRendererListener {
             new Point2I(-1, 0),
     };
 
-    private Deque<Point2I> recentTiles = new LinkedList<Point2I>();
-    private static final int KEEP_RECENT_TILES = 2;
-    private static final double RECENT_TILE_COST_FACTOR = 1.5;
-
     private List<Point2I> tileDijkstra(Point2I start, Point2I end) {
         Map<Point2I, Point2I> prev = new HashMap<Point2I, Point2I>();
         Map<Point2I, Double> dist = new HashMap<Point2I, Double>();
@@ -408,10 +408,7 @@ public final class LocalTestRendererListener {
                             && 0 <= nextVertex.y && nextVertex.y < tiles[nextVertex.x].length
                             && tiles[nextVertex.x][nextVertex.y] != TileType.EMPTY
                             && !prev.containsKey(nextVertex)) {
-                        double cost = hypot(nextVertex.x - vertex.x, nextVertex.y - vertex.y);
-                        if (recentTiles.contains(nextVertex)) {
-                            cost *= RECENT_TILE_COST_FACTOR;
-                        }
+                        double cost = hypot(nextVertex.x - vertex.x, nextVertex.y - vertex.y) * tileCostFactor(nextVertex);
                         Double option = dist.get(vertex) + cost;
                         if (option < dist.getOrDefault(nextVertex, Double.POSITIVE_INFINITY)) {
                             prev.put(nextVertex, vertex);
@@ -431,6 +428,28 @@ public final class LocalTestRendererListener {
         } while (!vertex.equals(start));
         Collections.reverse(path);
         return path;
+    }
+
+    private Deque<Point2I> recentTiles = new LinkedList<Point2I>();
+    private static final int KEEP_RECENT_TILES = 2;
+    private static final double RECENT_TILE_COST_FACTOR = 1.5;
+
+    private static final int STRAIGHT_TILE_RADIUS = 2;
+    private static final double STRAIGHT_TILE_COST_FACTOR = 0.5;
+
+    private double tileCostFactor(Point2I tile) {
+        double result = 1.0;
+        if (recentTiles.contains(tile)) {
+            result *= RECENT_TILE_COST_FACTOR;
+        }
+        if (max(abs(tile.x - noseTile.x), abs(tile.y - noseTile.y)) <= STRAIGHT_TILE_RADIUS) {
+            double angle = self.getAngleTo((tile.x + 0.5) * game.getTrackTileSize(),
+                                           (tile.y + 0.5) * game.getTrackTileSize());
+            if (abs(angle) < PI / 8) {
+                result *= STRAIGHT_TILE_COST_FACTOR;
+            }
+        }
+        return result;
     }
 
     private static final Point2I DIRECTION_UP    = new Point2I(0, -1);
@@ -546,7 +565,7 @@ public final class LocalTestRendererListener {
 
     private List<Point2I> getNextTiles(int count) {
         List<Point2I> result = new LinkedList<Point2I>();
-        Point2I tile = toTilePoint(nose);
+        Point2I tile = noseTile;
         for (int skip = 0; result.size() < count; ++skip) {
             Point2I target = getNextWP(skip);
             for (Point2I pathTile : tileDijkstra(tile, target)) {
@@ -564,7 +583,7 @@ public final class LocalTestRendererListener {
 
     private List<Point2I> getNextSubtiles() {
         List<Point2I> tiles = getNextTiles(4);
-        tiles.add(0, toTilePoint(nose));
+        tiles.add(0, noseTile);
 
         Point2I t0 = tiles.get(0);
         Point2I t1 = tiles.get(1);
@@ -671,7 +690,7 @@ public final class LocalTestRendererListener {
             }
         }
 
-        Point2I start = toSubtilePoint(nose);
+        Point2I start = noseSubtile;
         Point2I end = centerSubtile(tiles.get(tiles.size() - 1));
         subtiles[start.x][start.y] = SubtileType.ROAD;
         subtiles[end.x][end.y] = SubtileType.ROAD;

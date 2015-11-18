@@ -11,7 +11,9 @@ public final class MyStrategy implements Strategy {
     private static final int STUCK_START_TICKS = 150;
     private static final int STUCK_DURATION = 150;
 
-    enum State { START, RUN, STUCK };
+    enum State {START, RUN, STUCK}
+
+    ;
 
     private State state = State.START;
     private int stuckTickCount = 0;
@@ -36,12 +38,11 @@ public final class MyStrategy implements Strategy {
             // TODO: don't wait when pointed at a wall
             if (speedModule < STUCK_SPEED
                     && self.getDurability() > DAMAGE_EPS
-                    && ++stuckTickCount >= STUCK_START_TICKS){
+                    && ++stuckTickCount >= STUCK_START_TICKS) {
                 state = State.STUCK;
                 stuckStartTick = world.getTick();
             }
-        }
-        else if (state == State.STUCK
+        } else if (state == State.STUCK
                 && (speedModule > STUCK_SPEED
                 || world.getTick() - stuckStartTick > STUCK_DURATION)) {
             state = State.RUN;
@@ -51,8 +52,7 @@ public final class MyStrategy implements Strategy {
         if (state == State.STUCK) {
             move.setEnginePower(-1.0);
             move.setWheelTurn(-32.0 / PI * angle);
-        }
-        else {
+        } else {
             // TODO: improve steering to cause less damage
             move.setWheelTurn(32.0 / PI * angle);
             move.setEnginePower(1.0);
@@ -78,11 +78,11 @@ public final class MyStrategy implements Strategy {
                                 && self.getDistanceTo(enemy) < game.getTrackTileSize() * 1.5
                                 && self.getDistanceTo(enemy) > game.getCarHeight() * 2
                                 && (self.getAngleTo(enemy) < -PI * 5 / 6 || self.getAngleTo(enemy) > PI * 5 / 6)) {
-                                move.setSpillOil(true);
-                                break;
-                            }
+                            move.setSpillOil(true);
+                            break;
                         }
                     }
+                }
 
                 if (self.getNitroChargeCount() > 0 && abs(angle) < PI / 10) {
                     move.setUseNitro(true); // TODO: only use nitro when going straight or ladder
@@ -93,21 +93,25 @@ public final class MyStrategy implements Strategy {
 
     private Car self;
     private Point2D nose;
+    private Point2I noseTile;
+    private Point2I noseSubtile;
     private World world;
     private Game game;
 
     private void updateFields(Car self, World world, Game game) {
         this.self = self;
-        this.nose = new Point2D(self.getX() + cos(self.getAngle()) * game.getCarWidth() / 2,
-                                self.getY() + sin(self.getAngle()) * game.getCarWidth() / 2);
         this.world = world;
         this.game = game;
 
-        Point2I currentTile = toTilePoint(nose);
-        if (recentTiles.isEmpty() || !recentTiles.getLast().equals(currentTile)) {
-            recentTiles.addLast(currentTile);
+        this.nose = new Point2D(self.getX() + cos(self.getAngle()) * game.getCarWidth() / 2,
+                self.getY() + sin(self.getAngle()) * game.getCarWidth() / 2);
+        this.noseTile = toTilePoint(nose);
+        this.noseSubtile = toSubtilePoint(nose);
+
+        if (recentTiles.isEmpty() || !recentTiles.getLast().equals(noseTile)) {
+            recentTiles.addLast(noseTile);
             if (recentTiles.size() > KEEP_RECENT_TILES) {
-               recentTiles.removeFirst();
+                recentTiles.removeFirst();
             }
         }
     }
@@ -134,10 +138,6 @@ public final class MyStrategy implements Strategy {
             new Point2I(-1, 0),
     };
 
-    private Deque<Point2I> recentTiles = new LinkedList<Point2I>();
-    private static final int KEEP_RECENT_TILES = 2;
-    private static final double RECENT_TILE_COST_FACTOR = 1.5;
-
     private List<Point2I> tileDijkstra(Point2I start, Point2I end) {
         Map<Point2I, Point2I> prev = new HashMap<Point2I, Point2I>();
         Map<Point2I, Double> dist = new HashMap<Point2I, Double>();
@@ -163,10 +163,7 @@ public final class MyStrategy implements Strategy {
                             && 0 <= nextVertex.y && nextVertex.y < tiles[nextVertex.x].length
                             && tiles[nextVertex.x][nextVertex.y] != TileType.EMPTY
                             && !prev.containsKey(nextVertex)) {
-                        double cost = hypot(nextVertex.x - vertex.x, nextVertex.y - vertex.y);
-                        if (recentTiles.contains(nextVertex)) {
-                            cost *= RECENT_TILE_COST_FACTOR;
-                        }
+                        double cost = hypot(nextVertex.x - vertex.x, nextVertex.y - vertex.y) * tileCostFactor(nextVertex);
                         Double option = dist.get(vertex) + cost;
                         if (option < dist.getOrDefault(nextVertex, Double.POSITIVE_INFINITY)) {
                             prev.put(nextVertex, vertex);
@@ -186,6 +183,28 @@ public final class MyStrategy implements Strategy {
         } while (!vertex.equals(start));
         Collections.reverse(path);
         return path;
+    }
+
+    private Deque<Point2I> recentTiles = new LinkedList<Point2I>();
+    private static final int KEEP_RECENT_TILES = 2;
+    private static final double RECENT_TILE_COST_FACTOR = 1.5;
+
+    private static final int STRAIGHT_TILE_RADIUS = 2;
+    private static final double STRAIGHT_TILE_COST_FACTOR = 0.5;
+
+    private double tileCostFactor(Point2I tile) {
+        double result = 1.0;
+        if (recentTiles.contains(tile)) {
+            result *= RECENT_TILE_COST_FACTOR;
+        }
+        if (max(abs(tile.x - noseTile.x), abs(tile.y - noseTile.y)) <= STRAIGHT_TILE_RADIUS) {
+            double angle = self.getAngleTo((tile.x + 0.5) * game.getTrackTileSize(),
+                                           (tile.y + 0.5) * game.getTrackTileSize());
+            if (abs(angle) < PI / 8) {
+                result *= STRAIGHT_TILE_COST_FACTOR;
+            }
+        }
+        return result;
     }
 
     private static final Point2I DIRECTION_UP    = new Point2I(0, -1);
@@ -301,7 +320,7 @@ public final class MyStrategy implements Strategy {
 
     private List<Point2I> getNextTiles(int count) {
         List<Point2I> result = new LinkedList<Point2I>();
-        Point2I tile = toTilePoint(nose);
+        Point2I tile = noseTile;
         for (int skip = 0; result.size() < count; ++skip) {
             Point2I target = getNextWP(skip);
             for (Point2I pathTile : tileDijkstra(tile, target)) {
@@ -319,7 +338,7 @@ public final class MyStrategy implements Strategy {
 
     private List<Point2I> getNextSubtiles() {
         List<Point2I> tiles = getNextTiles(4);
-        tiles.add(0, toTilePoint(nose));
+        tiles.add(0, noseTile);
 
         Point2I t0 = tiles.get(0);
         Point2I t1 = tiles.get(1);
@@ -424,7 +443,7 @@ public final class MyStrategy implements Strategy {
             }
         }
 
-        Point2I start = toSubtilePoint(nose);
+        Point2I start = noseSubtile;
         Point2I end = centerSubtile(tiles.get(tiles.size() - 1));
         subtiles[start.x][start.y] = SubtileType.ROAD;
         subtiles[end.x][end.y] = SubtileType.ROAD;
