@@ -718,6 +718,10 @@ public final class LocalTestRendererListener {
         return (int) (coordinate / game.getTrackTileSize());
     }
 
+    private Point2I toTilePoint(Unit unit) {
+        return new Point2I(toTileCoordinate(unit.getX()), toTileCoordinate(unit.getY()));
+    }
+
     private Point2I toTilePoint(Point2D unit) {
         return new Point2I(toTileCoordinate(unit.getX()), toTileCoordinate(unit.getY()));
     }

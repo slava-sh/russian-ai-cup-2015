@@ -22,7 +22,7 @@ public final class MyStrategy implements Strategy {
         updateFields(self, world, game);
 
         List<Point2I> nextSubtiles = getNextSubtiles();
-        Point2I nextSubtile = nextSubtiles.get(CHASE_TILE);
+        Point2I nextSubtile = nextSubtiles.get(min(CHASE_TILE, nextSubtiles.size() - 1));
         double nextX = (nextSubtile.x + 0.5) * getSubtileSize();
         double nextY = (nextSubtile.y + 0.5) * getSubtileSize();
         double angle = self.getAngleTo(nextX, nextY);
@@ -454,6 +454,10 @@ public final class MyStrategy implements Strategy {
 
     private int toTileCoordinate(double coordinate) {
         return (int) (coordinate / game.getTrackTileSize());
+    }
+
+    private Point2I toTilePoint(Unit unit) {
+        return new Point2I(toTileCoordinate(unit.getX()), toTileCoordinate(unit.getY()));
     }
 
     private Point2I toTilePoint(Point2D unit) {
