@@ -455,15 +455,17 @@ public final class MyStrategy implements Strategy {
                 Point2I forward = new Point2I(t1.x - t0.x, t1.y - t0.y);
                 Point2I turn = new Point2I(t3.x - t2.x, t3.y - t2.y);
 
-                addWall(subtiles, t1, -forward.x, -forward.y);
-                addWall(subtiles, t1, turn.x - forward.x, turn.y - forward.y);
+                addWall(subtiles, t1, -forward.x,              -forward.y);
+                addWall(subtiles, t1, -forward.x +     turn.x, -forward.y +     turn.y);
+                addWall(subtiles, t1, -forward.x + 2 * turn.x, -forward.y + 2 * turn.y);
             }
             else if (!isStraight(t0, t4)) {
                 Point2I forward = new Point2I(t1.x - t0.x, t1.y - t0.y);
                 Point2I turn = new Point2I(t4.x - t3.x, t4.y - t3.y);
 
-                addWall(subtiles, t1, -forward.x, -forward.y);
-                addWall(subtiles, t1, turn.x - forward.x, turn.y - forward.y);
+                addWall(subtiles, t1, -forward.x,              -forward.y);
+                addWall(subtiles, t1, -forward.x +     turn.x, -forward.y +     turn.y);
+                addWall(subtiles, t1, -forward.x + 2 * turn.x, -forward.y + 2 * turn.y);
             }
         }
 
