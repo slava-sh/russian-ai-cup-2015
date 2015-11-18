@@ -5,15 +5,12 @@ import static java.lang.StrictMath.*;
 
 public final class MyStrategy implements Strategy {
 
-    private static final double BRAKE_SPEED = 10.0;
     private static final double DAMAGE_EPS = 0.001;
     private static final double STUCK_SPEED = 5.0;
     private static final int STUCK_START_TICKS = 80;
     private static final int STUCK_DURATION = 150;
 
-    enum State {START, RUN, STUCK}
-
-    ;
+    enum State {START, RUN, STUCK};
 
     private State state = State.START;
     private int stuckTickCount = 0;
@@ -64,7 +61,9 @@ public final class MyStrategy implements Strategy {
             // TODO: improve steering to cause less damage
             move.setWheelTurn(32.0 / PI * angle);
             move.setEnginePower(1.0);
-            if (speedModule * abs(angle) > 25.0 * PI / 8 && speedModule > BRAKE_SPEED) {
+
+            boolean slowingDown = (turn4 && speedModule > 30.0) || (turn3 && speedModule > 25.0) || (abs(angle) > PI / 8 && speedModule > 15);
+            if (slowingDown) {
                 move.setBrake(true);
             }
 
@@ -92,8 +91,8 @@ public final class MyStrategy implements Strategy {
                     }
                 }
 
-                if (self.getNitroChargeCount() > 0 && abs(angle) < PI / 10) {
-                    move.setUseNitro(true); // TODO: only use nitro when going straight or ladder
+                if (self.getNitroChargeCount() > 0 && !slowingDown) {
+                    move.setUseNitro(true);
                 }
             }
         }
@@ -359,6 +358,8 @@ public final class MyStrategy implements Strategy {
     }
 
     private static final int CHASE_TILE = 2;
+    private boolean turn3 = false;
+    private boolean turn4 = false;
 
     private List<Point2I> getNextSubtiles() {
         List<Point2I> tiles = getNextTiles(4);
@@ -450,8 +451,13 @@ public final class MyStrategy implements Strategy {
         addWalls(t0, t1, t2, subtiles);
         addWalls(t1, t2, t3, subtiles);
 
+        // TODO: refactor turn3 and turn4
+        turn3 = false;
+        turn4 = false;
         if (isStraight(t0, t1) && isStraight(t0, t2)) {
             if (!isStraight(t0, t3)) {
+                turn3 = true;
+
                 Point2I forward = new Point2I(t1.x - t0.x, t1.y - t0.y);
                 Point2I turn = new Point2I(t3.x - t2.x, t3.y - t2.y);
 
@@ -460,6 +466,8 @@ public final class MyStrategy implements Strategy {
                 addWall(subtiles, t1, -forward.x + 2 * turn.x, -forward.y + 2 * turn.y);
             }
             else if (!isStraight(t0, t4)) {
+                turn4 = true;
+
                 Point2I forward = new Point2I(t1.x - t0.x, t1.y - t0.y);
                 Point2I turn = new Point2I(t4.x - t3.x, t4.y - t3.y);
 
