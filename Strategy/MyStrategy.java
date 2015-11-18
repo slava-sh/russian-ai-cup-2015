@@ -163,8 +163,11 @@ public final class MyStrategy implements Strategy {
                             && 0 <= nextVertex.y && nextVertex.y < tiles[nextVertex.x].length
                             && tiles[nextVertex.x][nextVertex.y] != TileType.EMPTY
                             && !prev.containsKey(nextVertex)) {
-                        double recentTileCostFactor = recentTiles.contains(nextVertex) ? RECENT_TILE_COST_FACTOR : 1;
-                        Double option = dist.get(vertex) + hypot(nextVertex.x - vertex.x, nextVertex.y - vertex.y) * recentTileCostFactor;
+                        double cost = hypot(nextVertex.x - vertex.x, nextVertex.y - vertex.y);
+                        if (recentTiles.contains(nextVertex)) {
+                            cost *= RECENT_TILE_COST_FACTOR;
+                        }
+                        Double option = dist.get(vertex) + cost;
                         if (option < dist.getOrDefault(nextVertex, Double.POSITIVE_INFINITY)) {
                             prev.put(nextVertex, vertex);
                             dist.put(nextVertex, option);
