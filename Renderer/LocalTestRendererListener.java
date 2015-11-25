@@ -131,6 +131,8 @@ public final class LocalTestRendererListener {
         double TIME = 5;
 
         if (world.getTick() % TIME == 0) {
+            Point2D nose = new Point2D(self.getX() + cos(self.getAngle()) * game.getCarWidth() / 2,
+                                       self.getY() + sin(self.getAngle()) * game.getCarWidth() / 2);
             realTrajectory.add(nose);
             //predictedTrajectory.add(postition);
         }
@@ -163,6 +165,10 @@ public final class LocalTestRendererListener {
             setColor(Color.RED);
             drawSubtile(subtile);
             ++subtileI;
+        }
+        for (Point2I subtile : busySubtiles) {
+            setColor(new Color(150, 150, 200));
+            fillSubtile(subtile);
         }
     }
 
@@ -316,11 +322,11 @@ public final class LocalTestRendererListener {
 
     private long myId = -1;
     private Car self;
-    private Point2D nose;
     private Point2I noseTile;
     private Point2I noseSubtile;
 
     private Map<Point2I, Integer> bonusCount;
+    private Set<Point2I> busySubtiles;
 
     private void updateFields(Graphics graphics, World world, Game game, int canvasWidth, int canvasHeight,
                               double left, double top, double width, double height) {
@@ -350,10 +356,8 @@ public final class LocalTestRendererListener {
             }
         }
 
-        nose = new Point2D(self.getX() + cos(self.getAngle()) * game.getCarWidth() / 2,
-           self.getY() + sin(self.getAngle()) * game.getCarWidth() / 2);
-        noseTile = toTilePoint(nose);
-        noseSubtile = toSubtilePoint(nose);
+        noseSubtile = frontSubtile(self);
+        noseTile = subtileToTile(noseSubtile);
 
         if (recentTiles.isEmpty() || !recentTiles.getLast().equals(noseTile)) {
             recentTiles.addLast(noseTile);
@@ -363,6 +367,7 @@ public final class LocalTestRendererListener {
         }
 
         bonusCount = countBonuses();
+        busySubtiles = getBusySubtiles();
     }
 
     enum SubtileType {WALL, ROAD};
@@ -510,6 +515,7 @@ public final class LocalTestRendererListener {
 
     // TODO: vary on bonus type
     private static final double BONUS_COST_FACTOR = 0.5;
+    private static final double BUSY_SUBTILE_FACTOR = 2.0;
 
     private List<Point2I> subtileDijkstra(Point2I start, Point2I end, SubtileType[][] subtiles) {
         Map<Point2I, Point2I> prev = new HashMap<Point2I, Point2I>();
@@ -562,6 +568,10 @@ public final class LocalTestRendererListener {
             result *= pow(BONUS_COST_FACTOR, count);
         }
 
+        if (busySubtiles.contains(subtile)) {
+            result *= BUSY_SUBTILE_FACTOR;
+        }
+
         return result;
     }
 
@@ -570,6 +580,16 @@ public final class LocalTestRendererListener {
         for (Bonus bonus : world.getBonuses()) {
             Point2I subtile = toSubtilePoint(bonus);
             result.put(subtile, result.getOrDefault(subtile, 0) + 1);
+        }
+        return result;
+    }
+
+    private Set<Point2I> getBusySubtiles() {
+        Set<Point2I> result = new HashSet<Point2I>();
+        for (Car car : world.getCars()) {
+            result.add(frontSubtile(car));
+            result.add(toSubtilePoint(car));
+            result.add(backSubtile(car));
         }
         return result;
     }
@@ -753,6 +773,16 @@ public final class LocalTestRendererListener {
         if (0 <= x && x < subtiles.length && 0 <= y && y < subtiles[x].length) {
             subtiles[x][y] = SubtileType.WALL;
         }
+    }
+
+    private Point2I frontSubtile(Car car) {
+        return toSubtilePoint(new Point2D(car.getX() + cos(car.getAngle()) * game.getCarWidth() / 2,
+                                          car.getY() + sin(car.getAngle()) * game.getCarWidth() / 2));
+    }
+
+    private Point2I backSubtile(Car car) {
+        return toSubtilePoint(new Point2D(car.getX() - cos(car.getAngle()) * game.getCarWidth() / 2,
+                                          car.getY() - sin(car.getAngle()) * game.getCarWidth() / 2));
     }
 
     private Point2I centerSubtile(Point2I tile) {
