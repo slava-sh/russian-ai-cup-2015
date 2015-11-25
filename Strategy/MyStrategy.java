@@ -84,8 +84,7 @@ public final class MyStrategy implements Strategy {
                     for (Car enemy : world.getCars()) {
                         if (!enemy.isTeammate()
                                 && self.getDistanceTo(enemy) < game.getTrackTileSize() * 1.5
-                                && self.getDistanceTo(enemy) > game.getCarHeight() * 2
-                                && (self.getAngleTo(enemy) < -PI * 5 / 8 || self.getAngleTo(enemy) > PI * 5 / 8)) {
+                                && (abs(enemy.getAngleTo(self)) < PI / 10)) {
                             move.setSpillOil(true);
                             break;
                         }
