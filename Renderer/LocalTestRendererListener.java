@@ -166,10 +166,10 @@ public final class LocalTestRendererListener {
             drawSubtile(subtile);
             ++subtileI;
         }
-        for (Point2I subtile : busySubtiles) {
-            setColor(new Color(150, 150, 200));
-            fillSubtile(subtile);
-        }
+        //for (Point2I subtile : busySubtiles) {
+        //    setColor(new Color(150, 150, 200));
+        //    fillSubtile(subtile);
+        //}
     }
 
     private void drawSubtileGrid() {
